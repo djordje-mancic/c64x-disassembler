@@ -6,10 +6,6 @@ use crate::instruction::{
 };
 
 pub fn read_compact_instruction(opcode: u16) -> Result<Box<dyn C64xInstruction>> {
-    if opcode == 0 {
-        return Err(Error::new(ErrorKind::InvalidData, "Null byte found"));
-    }
-
     if let Ok(instruction) = SUnitInstruction::new_compact(opcode) {
         return Ok(Box::new(instruction));
     }
@@ -18,10 +14,6 @@ pub fn read_compact_instruction(opcode: u16) -> Result<Box<dyn C64xInstruction>>
 }
 
 pub fn read_instruction(opcode: u32) -> Result<Box<dyn C64xInstruction>> {
-    if opcode == 0 {
-        return Err(Error::new(ErrorKind::InvalidData, "Null byte found"));
-    }
-
     if let Ok(instruction) = SUnitInstruction::new(opcode) {
         return Ok(Box::new(instruction));
     }
@@ -60,12 +52,16 @@ pub fn read_packet(packet: [u8; PACKET_SIZE]) -> Result<Vec<Box<dyn C64xInstruct
                 packet[index_start + 3],
             ]))?);
         } else {
-            vec.push(read_instruction(u32::from_le_bytes([
+            let instruction = read_instruction(u32::from_le_bytes([
                 packet[index_start],
                 packet[index_start + 1],
                 packet[index_start + 2],
                 packet[index_start + 3],
-            ]))?);
+            ]))?;
+            if instruction.as_any().is::<CompactInstructionHeader>() {
+                return Err(Error::new(ErrorKind::InvalidData, "Compact instruction header found in unusual place"));
+            }
+            vec.push(instruction);
         }
     }
 
