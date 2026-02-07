@@ -10,7 +10,7 @@ pub struct SUnitInstruction {
     pub csta: Option<u32>,
     pub cstb: Option<u32>,
     pub destination: Option<Register>,
-    compact: bool
+    compact: bool,
 }
 
 impl SUnitInstruction {
@@ -109,7 +109,7 @@ impl Default for SUnitInstruction {
             csta: None,
             cstb: None,
             destination: None,
-            compact: false
+            compact: false,
         }
     }
 }
@@ -147,18 +147,18 @@ fn move_constant_compact(instruction: &mut SUnitInstruction) {
 
     let mut cst = 0u32;
     cst += (read_opcode & 0b11) << 5;
-    read_opcode >>=2;
+    read_opcode >>= 2;
 
     instruction.destination = Some(Register::from_dest(
         (read_opcode & 0b111) as u8,
         instruction.side,
     ));
 
-    read_opcode >>=3;
+    read_opcode >>= 3;
     cst += (read_opcode & 0b1) << 7;
-    read_opcode >>=1;
+    read_opcode >>= 1;
     cst += (read_opcode & 0b11) << 3;
-    read_opcode >>=2;
+    read_opcode >>= 2;
     cst += read_opcode & 0b111;
     instruction.csta = Some(cst);
 }
