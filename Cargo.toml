@@ -1,5 +1,6 @@
 [package]
 name = "c64x-disassembler"
+description = "Disassembler for TMS320C64x/C64x+ Digital Signal Processors"
 version = "0.1.0"
 edition = "2024"
 
