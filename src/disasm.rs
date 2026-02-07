@@ -10,6 +10,10 @@ pub fn read_compact_instruction(opcode: u16) -> Result<Box<dyn C64xInstruction>>
         return Err(Error::new(ErrorKind::InvalidData, "Null byte found"));
     }
 
+    if let Ok(instruction) = SUnitInstruction::new_compact(opcode) {
+        return Ok(Box::new(instruction));
+    }
+
     Ok(Box::new(InvalidCompactInstruction::new(opcode)))
 }
 

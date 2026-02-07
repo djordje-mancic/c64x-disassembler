@@ -161,10 +161,6 @@ impl C64xInstruction for CompactInstructionHeader {
     fn opcode(&self) -> u32 {
         self.opcode
     }
-    fn amount_bytes(&self) -> u32 {
-        4
-    }
-
     fn as_any(&self) -> &dyn Any {
         self
     }

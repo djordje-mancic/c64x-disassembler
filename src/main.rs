@@ -24,18 +24,22 @@ fn main() {
     loop {
         let mut buf = [0u8; PACKET_SIZE];
         reader.read_exact(&mut buf).expect("Couldn't read exact");
-        let Ok(packets) = read_packet(buf) else {
+        let Ok(instructions) = read_packet(buf) else {
             address += PACKET_SIZE as u32;
             continue;
         };
-        for packet in packets {
+        for instruction in instructions {
             println!(
                 "0x{address:08X}: {:<12} {:<12} {}",
-                format!("{:X}", packet.opcode()),
-                packet.instruction(),
-                packet.operands()
+                format!("{:X}", instruction.opcode()),
+                instruction.instruction(),
+                instruction.operands()
             );
-            address += packet.amount_bytes();
+            if instruction.is_compact() {
+                address += 2;
+            } else {
+                address += 4;
+            }
         }
     }
 }

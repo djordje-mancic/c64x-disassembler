@@ -10,6 +10,7 @@ pub struct SUnitInstruction {
     pub csta: Option<u32>,
     pub cstb: Option<u32>,
     pub destination: Option<Register>,
+    compact: bool
 }
 
 impl SUnitInstruction {
@@ -22,12 +23,32 @@ impl SUnitInstruction {
 
         match (read_opcode >> 1) & 0b1111 {
             0b1010 => {
-                move_constant(&mut instruction)?;
+                move_constant(&mut instruction);
             }
             _ => {
                 return Err(Error::new(
                     ErrorKind::InvalidInput,
                     "Not an S Unit instruction",
+                ));
+            }
+        }
+
+        Ok(instruction)
+    }
+
+    pub fn new_compact(opcode: u16) -> Result<Self> {
+        let mut instruction = SUnitInstruction::default();
+        instruction.compact = true;
+        instruction.opcode = opcode as u32;
+
+        match (opcode >> 1) & 0b1111 {
+            0b1001 => {
+                move_constant_compact(&mut instruction);
+            }
+            _ => {
+                return Err(Error::new(
+                    ErrorKind::InvalidInput,
+                    "Not an S Unit compact instruction",
                 ));
             }
         }
@@ -69,8 +90,8 @@ impl C64xInstruction for SUnitInstruction {
         self.opcode
     }
 
-    fn amount_bytes(&self) -> u32 {
-        4
+    fn is_compact(&self) -> bool {
+        self.compact
     }
 
     fn as_any(&self) -> &dyn std::any::Any {
@@ -88,11 +109,12 @@ impl Default for SUnitInstruction {
             csta: None,
             cstb: None,
             destination: None,
+            compact: false
         }
     }
 }
 
-fn move_constant(instruction: &mut SUnitInstruction) -> Result<()> {
+fn move_constant(instruction: &mut SUnitInstruction) {
     let mut read_opcode = instruction.opcode >> 1;
     if read_opcode & 1 == 1 {
         instruction.side = DestinationSide::B;
@@ -112,6 +134,31 @@ fn move_constant(instruction: &mut SUnitInstruction) -> Result<()> {
         (read_opcode & 0b11111) as u8,
         instruction.side,
     ));
+}
 
-    Ok(())
+fn move_constant_compact(instruction: &mut SUnitInstruction) {
+    let mut read_opcode = instruction.opcode;
+    instruction.name = String::from("MVK");
+
+    if read_opcode & 1 == 1 {
+        instruction.side = DestinationSide::B;
+    }
+    read_opcode >>= 5;
+
+    let mut cst = 0u32;
+    cst += (read_opcode & 0b11) << 5;
+    read_opcode >>=2;
+
+    instruction.destination = Some(Register::from_dest(
+        (read_opcode & 0b111) as u8,
+        instruction.side,
+    ));
+
+    read_opcode >>=3;
+    cst += (read_opcode & 0b1) << 7;
+    read_opcode >>=1;
+    cst += (read_opcode & 0b11) << 3;
+    read_opcode >>=2;
+    cst += read_opcode & 0b111;
+    instruction.csta = Some(cst);
 }

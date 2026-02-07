@@ -12,7 +12,9 @@ pub trait C64xInstruction {
         String::from("")
     }
     fn opcode(&self) -> u32;
-    fn amount_bytes(&self) -> u32;
+    fn is_compact(&self) -> bool {
+        false
+    }
     fn as_any(&self) -> &dyn Any;
 }
 
@@ -105,10 +107,6 @@ impl C64xInstruction for InvalidInstruction {
     fn opcode(&self) -> u32 {
         self.opcode
     }
-    fn amount_bytes(&self) -> u32 {
-        4
-    }
-
     fn as_any(&self) -> &dyn Any {
         self
     }
@@ -131,10 +129,9 @@ impl C64xInstruction for InvalidCompactInstruction {
     fn opcode(&self) -> u32 {
         self.opcode as u32
     }
-    fn amount_bytes(&self) -> u32 {
-        2
+    fn is_compact(&self) -> bool {
+        true
     }
-
     fn as_any(&self) -> &dyn Any {
         self
     }
