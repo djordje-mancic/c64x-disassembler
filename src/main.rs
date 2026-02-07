@@ -1,6 +1,7 @@
 use std::{
     fs::File,
-    io::{BufReader, Read},
+    io::{BufReader, ErrorKind, Read},
+    process::exit,
 };
 
 use clap::Parser;
@@ -11,19 +12,34 @@ mod disasm;
 mod instruction;
 
 #[derive(Parser)]
+#[command(version, about)]
 struct Args {
     file: String,
+    /// Memory offset to apply to addresses
+    #[arg(short, long, default_value_t = 0)]
+    offset: u32,
 }
 
 fn main() {
     let args = Args::parse();
 
-    let file = File::open(&args.file).expect("Couldn't open file");
+    let file_result = File::open(&args.file);
+    let Ok(file) = file_result else {
+        let _ = file_result.inspect_err(|e| eprintln!("Couldn't open file: {e}"));
+        exit(-1);
+    };
     let mut reader = BufReader::new(file);
-    let mut address = 0u32;
+
+    let mut address = args.offset;
     loop {
         let mut buf = [0u8; PACKET_SIZE];
-        reader.read_exact(&mut buf).expect("Couldn't read exact");
+        if let Err(e) = reader.read_exact(&mut buf) {
+            if e.kind() != ErrorKind::UnexpectedEof {
+                eprintln!("Error reading from file: {e}");
+                exit(-1);
+            }
+            break;
+        }
         let Ok(instructions) = read_packet(buf) else {
             address += PACKET_SIZE as u32;
             continue;
