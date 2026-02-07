@@ -1,6 +1,7 @@
 use std::any::Any;
 
 pub mod fphead;
+pub mod no_unit;
 pub mod s_unit;
 
 pub trait C64xInstruction {

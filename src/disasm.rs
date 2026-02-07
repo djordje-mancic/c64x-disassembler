@@ -2,11 +2,15 @@ use std::io::{Error, ErrorKind, Result};
 
 use crate::instruction::{
     C64xInstruction, InvalidCompactInstruction, InvalidInstruction,
-    fphead::CompactInstructionHeader, s_unit::SUnitInstruction,
+    fphead::CompactInstructionHeader, no_unit::NoUnitInstruction, s_unit::SUnitInstruction,
 };
 
 pub fn read_compact_instruction(opcode: u16) -> Result<Box<dyn C64xInstruction>> {
     if let Ok(instruction) = SUnitInstruction::new_compact(opcode) {
+        return Ok(Box::new(instruction));
+    }
+
+    if let Ok(instruction) = NoUnitInstruction::new_compact(opcode) {
         return Ok(Box::new(instruction));
     }
 
@@ -19,6 +23,10 @@ pub fn read_instruction(opcode: u32) -> Result<Box<dyn C64xInstruction>> {
     }
 
     if let Ok(instruction) = CompactInstructionHeader::new(opcode) {
+        return Ok(Box::new(instruction));
+    }
+
+    if let Ok(instruction) = NoUnitInstruction::new(opcode) {
         return Ok(Box::new(instruction));
     }
 
@@ -59,7 +67,10 @@ pub fn read_packet(packet: [u8; PACKET_SIZE]) -> Result<Vec<Box<dyn C64xInstruct
                 packet[index_start + 3],
             ]))?;
             if instruction.as_any().is::<CompactInstructionHeader>() {
-                return Err(Error::new(ErrorKind::InvalidData, "Compact instruction header found in unusual place"));
+                return Err(Error::new(
+                    ErrorKind::InvalidData,
+                    "Compact instruction header found in unusual place",
+                ));
             }
             vec.push(instruction);
         }
