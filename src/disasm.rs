@@ -33,7 +33,13 @@ pub fn read_instruction(opcode: u32) -> Result<Box<dyn C64xInstruction>> {
     Ok(Box::new(InvalidInstruction::new(opcode)))
 }
 
-pub const PACKET_SIZE: usize = 32;
+/// Size of a regular instruction in bytes
+pub const INSTRUCTION_SIZE: usize = 4;
+/// Size of a compact instruction in bytes
+pub const COMPACT_INSTRUCTION_SIZE: usize = 2;
+/// Size of an FP (Fetch Packet) in bytes
+pub const PACKET_SIZE: usize = 8 * INSTRUCTION_SIZE;
+
 pub fn read_packet(packet: [u8; PACKET_SIZE]) -> Result<Vec<Box<dyn C64xInstruction>>> {
     let mut vec: Vec<Box<dyn C64xInstruction>> = vec![];
     let last_instruction = read_instruction(u32::from_le_bytes([
