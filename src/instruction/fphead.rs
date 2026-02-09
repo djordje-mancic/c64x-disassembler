@@ -3,7 +3,10 @@ use std::{
     io::{Error, ErrorKind, Result},
 };
 
-use crate::instruction::{C64xInstruction, DataSize};
+use crate::instruction::{
+    C64xInstruction, DataSize,
+    parser::{ParsedVariable, ParsingInstruction, parse},
+};
 
 pub struct CompactInstructionHeader {
     opcode: u32,
@@ -31,51 +34,80 @@ pub struct CompactInstructionHeader {
     /// instructions are decoded as ``SADD``, ``SUBS``, ``SSHL``, ``SMPY``, ``SMPYH``, ``SMPYLH`` and
     /// ``SMPYHL`` respectively.
     pub saturate: bool,
+    pub parallel_instructions: [bool; 14],
 }
 
 impl CompactInstructionHeader {
     pub fn new(opcode: u32) -> Result<Self> {
-        if (opcode >> 28) & 0b1111 != 0b1110 {
-            return Err(Error::new(
+        let format = [
+            ParsingInstruction::BitArray {
+                size: 14,
+                name: String::from("p"),
+            },
+            ParsingInstruction::Bit {
+                name: String::from("SAT"),
+            },
+            ParsingInstruction::Bit {
+                name: String::from("BR"),
+            },
+            ParsingInstruction::Unsigned {
+                size: 2,
+                name: String::from("DSZ_1"),
+            },
+            ParsingInstruction::Bit {
+                name: String::from("DSZ_2"),
+            },
+            ParsingInstruction::Bit {
+                name: String::from("RS"),
+            },
+            ParsingInstruction::Bit {
+                name: String::from("PROT"),
+            },
+            ParsingInstruction::BitArray {
+                size: 7,
+                name: String::from("layout"),
+            },
+            ParsingInstruction::Match {
+                size: 4,
+                value: 0b1110,
+            },
+        ];
+        let parsed_variables = parse(opcode, &format).map_err(|e| {
+            Error::new(
                 ErrorKind::InvalidInput,
-                "Not a compact instruction header",
-            ));
-        }
+                format!("Not a compact instruction header: {e}"),
+            )
+        })?;
 
         let layout = {
-            let mut layout_arr = [false; 7];
-            let mut layout_bytes = opcode >> 21;
-            for i in 0..7 {
-                if layout_bytes & 1 == 1 {
-                    layout_arr[i] = true
-                }
-                layout_bytes >>= 1;
-            }
-            layout_arr
+            let layout_vec =
+                ParsedVariable::try_get(&parsed_variables, "layout")?.get_bool_vec()?;
+            let Some(layout_ref) = layout_vec.first_chunk::<7>() else {
+                return Err(Error::other("Layout doesn't have 7 elements"));
+            };
+            *layout_ref
         };
-
-        let mut loads_protected = false;
-        let mut register_set = false;
-        let mut primary_data_size = DataSize::Word;
-        let mut secondary_data_size = DataSize::ByteUnsigned;
-        let mut decode_compact_branches = false;
-        let mut saturate = false;
-
-        {
-            let mut expansion_bytes = opcode >> 14;
-            if expansion_bytes & 1 == 1 {
-                saturate = true;
+        let parallel_instructions = {
+            let layout_vec = ParsedVariable::try_get(&parsed_variables, "p")?.get_bool_vec()?;
+            let Some(layout_ref) = layout_vec.first_chunk::<14>() else {
+                return Err(Error::other("P-bits don't hhave 14 elements"));
+            };
+            *layout_ref
+        };
+        let loads_protected = ParsedVariable::try_get(&parsed_variables, "PROT")?.get_bool()?;
+        let register_set = ParsedVariable::try_get(&parsed_variables, "RS")?.get_bool()?;
+        let data_sizes_1 = ParsedVariable::try_get(&parsed_variables, "DSZ_1")?.get_u32()?;
+        let data_sizes_2 = ParsedVariable::try_get(&parsed_variables, "DSZ_2")?.get_bool()?;
+        let primary_data_size = {
+            if data_sizes_2 == true {
+                DataSize::DoubleWord
+            } else {
+                DataSize::Word
             }
-            expansion_bytes >>= 1;
-
-            if expansion_bytes & 1 == 1 {
-                decode_compact_branches = true;
-            }
-            expansion_bytes >>= 1;
-
-            if expansion_bytes & 0b111 >= 0b100 {
-                primary_data_size = DataSize::DoubleWord;
-                secondary_data_size = match expansion_bytes & 0b11 {
+        };
+        let secondary_data_size = {
+            if primary_data_size == DataSize::DoubleWord {
+                match data_sizes_1 {
                     0 => DataSize::Word,
                     1 => DataSize::Byte,
                     2 => DataSize::NonAlignedWord,
@@ -83,8 +115,7 @@ impl CompactInstructionHeader {
                     _ => DataSize::Word,
                 }
             } else {
-                primary_data_size = DataSize::Word;
-                secondary_data_size = match expansion_bytes & 0b11 {
+                match data_sizes_1 {
                     0 => DataSize::ByteUnsigned,
                     1 => DataSize::Byte,
                     2 => DataSize::HalfWordUnsigned,
@@ -92,21 +123,14 @@ impl CompactInstructionHeader {
                     _ => DataSize::ByteUnsigned,
                 }
             }
-            expansion_bytes >>= 3;
-
-            if expansion_bytes & 1 == 1 {
-                register_set = true;
-            }
-            expansion_bytes >>= 1;
-
-            if expansion_bytes & 1 == 1 {
-                loads_protected = true;
-            }
-        }
-
+        };
+        let decode_compact_branches =
+            ParsedVariable::try_get(&parsed_variables, "BR")?.get_bool()?;
+        let saturate = ParsedVariable::try_get(&parsed_variables, "SAT")?.get_bool()?;
         Ok(Self {
             opcode,
             layout,
+            parallel_instructions,
             loads_protected,
             register_set,
             primary_data_size,

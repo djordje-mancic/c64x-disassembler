@@ -2,6 +2,7 @@ use std::any::Any;
 
 pub mod fphead;
 pub mod no_unit;
+pub mod parser;
 pub mod s_unit;
 
 pub trait C64xInstruction {
@@ -19,6 +20,7 @@ pub trait C64xInstruction {
     fn as_any(&self) -> &dyn Any;
 }
 
+#[derive(PartialEq, Eq)]
 pub enum DataSize {
     Byte,
     ByteUnsigned,
