@@ -24,9 +24,9 @@ impl C64xInstruction for InvalidInstruction {
 
     fn instruction(&self) -> String {
         if self.compact {
-            String::from("INVALID INSTRUCTION")
-        } else {
             String::from("INVALID COMPACT INSTRUCTION")
+        } else {
+            String::from("INVALID INSTRUCTION")
         }
     }
     fn opcode(&self) -> u32 {
@@ -34,5 +34,8 @@ impl C64xInstruction for InvalidInstruction {
     }
     fn as_any(&self) -> &dyn Any {
         self
+    }
+    fn is_compact(&self) -> bool {
+        self.compact
     }
 }
