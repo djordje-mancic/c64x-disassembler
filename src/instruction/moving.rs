@@ -239,6 +239,116 @@ impl C64xInstruction for MoveConstantInstruction {
             });
         }
 
+        let multiunit_formats = [
+            vec![
+                ParsingInstruction::Bit {
+                    name: String::from("s"),
+                },
+                ParsingInstruction::Match {
+                    size: 2,
+                    value: 0b11,
+                },
+                ParsingInstruction::Unsigned {
+                    size: 2,
+                    name: String::from("unit"),
+                },
+                ParsingInstruction::Match {
+                    size: 2,
+                    value: 0b11,
+                },
+                ParsingInstruction::Register {
+                    size: 3,
+                    name: String::from("dst"),
+                },
+                ParsingInstruction::Match {
+                    size: 3,
+                    value: 0b010,
+                },
+                ParsingInstruction::Unsigned {
+                    size: 1,
+                    name: String::from("cst"),
+                },
+                ParsingInstruction::Unsigned {
+                    size: 2,
+                    name: String::from("cc"),
+                },
+            ],
+            vec![
+                ParsingInstruction::Bit {
+                    name: String::from("s"),
+                },
+                ParsingInstruction::Match {
+                    size: 2,
+                    value: 0b11,
+                },
+                ParsingInstruction::Unsigned {
+                    size: 2,
+                    name: String::from("unit"),
+                },
+                ParsingInstruction::Match {
+                    size: 2,
+                    value: 0b11,
+                },
+                ParsingInstruction::Register {
+                    size: 3,
+                    name: String::from("dst"),
+                },
+                ParsingInstruction::Match {
+                    size: 3,
+                    value: 0b110,
+                },
+                ParsingInstruction::Unsigned {
+                    size: 1,
+                    name: String::from("cst"),
+                },
+                ParsingInstruction::Match {
+                    size: 2,
+                    value: 0b00,
+                },
+            ],
+        ];
+
+        for format in multiunit_formats {
+            let Ok(parsed_variables) = parse(opcode as u32, format.as_slice()) else {
+                continue;
+            };
+            let constant = ParsedVariable::try_get(&parsed_variables, "cst")?.get_u32()?;
+            let destination = ParsedVariable::try_get(&parsed_variables, "dst")?.get_register()?;
+            let unit_value = ParsedVariable::try_get(&parsed_variables, "unit")?.get_u32()?;
+            let unit = {
+                match unit_value {
+                    0 => Unit::L,
+                    1 => Unit::S,
+                    2 => Unit::D,
+                    _ => continue,
+                }
+            };
+            let conditional_operation = {
+                if let Ok(variable) = ParsedVariable::try_get(&parsed_variables, "cc") {
+                    let cc = variable.get_u32()?;
+                    match cc {
+                        0 => Some(ConditionalOperation::NonZero(Register::A(0))),
+                        1 => Some(ConditionalOperation::Zero(Register::A(0))),
+                        2 => Some(ConditionalOperation::NonZero(Register::B(0))),
+                        3 => Some(ConditionalOperation::Zero(Register::B(0))),
+                        _ => None,
+                    }
+                } else {
+                    None
+                }
+            };
+            return Ok(Self {
+                opcode: opcode as u32,
+                parallel: false,
+                high: false,
+                constant,
+                destination,
+                compact: true,
+                unit,
+                conditional_operation,
+            });
+        }
+
         Err(std::io::Error::new(
             std::io::ErrorKind::InvalidInput,
             format!("Not a Move Constant instruction: No matches found."),
