@@ -1,11 +1,28 @@
 use std::any::Any;
+use std::io::{Error, ErrorKind, Result};
 
 pub mod fphead;
-pub mod no_unit;
+pub mod invalid;
+pub mod moving;
+pub mod nop;
 pub mod parser;
-pub mod s_unit;
 
 pub trait C64xInstruction {
+    fn new(opcode: u32) -> Result<Self>
+    where
+        Self: Sized,
+    {
+        Err(Error::new(ErrorKind::Unsupported, "Instruction not 32-bit"))
+    }
+    fn new_compact(opcode: u16) -> Result<Self>
+    where
+        Self: Sized,
+    {
+        Err(Error::new(
+            ErrorKind::Unsupported,
+            "Instruction not compact (16-bit)",
+        ))
+    }
     fn instruction(&self) -> String;
     fn instruction_clean(&self) -> String {
         self.instruction()
@@ -16,6 +33,12 @@ pub trait C64xInstruction {
     fn opcode(&self) -> u32;
     fn is_compact(&self) -> bool {
         false
+    }
+    fn is_parallel(&self) -> bool {
+        false
+    }
+    fn conditional_operation(&self) -> Option<ConditionalOperation> {
+        None
     }
     fn as_any(&self) -> &dyn Any;
 }
@@ -63,23 +86,55 @@ impl ToString for DataSize {
 }
 
 #[derive(PartialEq, Eq, Clone, Copy)]
-pub enum DestinationSide {
-    A,
-    B,
+pub enum Unit {
+    L,
+    S,
+    M,
+    D,
 }
 
-#[derive(PartialEq, Eq, Clone, Copy)]
+impl Unit {
+    pub fn to_sided_string(&self, side: bool) -> String {
+        let mut value = self.to_string();
+        if side == false {
+            value += "1";
+        } else {
+            value += "2";
+        }
+        value
+    }
+}
+
+impl ToString for Unit {
+    fn to_string(&self) -> String {
+        match self {
+            Unit::L => String::from("L"),
+            Unit::S => String::from("S"),
+            Unit::M => String::from("M"),
+            Unit::D => String::from("D"),
+        }
+    }
+}
+
+#[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub enum Register {
     A(u8),
     B(u8),
 }
 
 impl Register {
-    pub fn from_dest(dest: u8, side: DestinationSide) -> Self {
-        if side == DestinationSide::A {
-            Register::A(dest)
+    pub fn from(value: u8, side: bool) -> Self {
+        if side == false {
+            Register::A(value)
         } else {
-            Register::B(dest)
+            Register::B(value)
+        }
+    }
+
+    pub fn side(&self) -> bool {
+        match self {
+            Register::A(_) => false,
+            Register::B(_) => true,
         }
     }
 }
@@ -93,49 +148,49 @@ impl ToString for Register {
     }
 }
 
-pub struct InvalidInstruction {
-    opcode: u32,
+#[derive(PartialEq, Eq, Clone, Copy)]
+pub enum ConditionalOperation {
+    Zero(Register),
+    NonZero(Register),
 }
 
-impl InvalidInstruction {
-    pub fn new(opcode: u32) -> Self {
-        InvalidInstruction { opcode }
+impl ConditionalOperation {
+    pub fn from(creg: u32, z: bool) -> Option<Self> {
+        let register_option = {
+            if creg & 0b100 == 0b100 {
+                match creg & 0b11 {
+                    0b00 => Some(Register::A(1)),
+                    0b01 => Some(Register::A(2)),
+                    0b10 => Some(Register::A(0)),
+                    _ => None,
+                }
+            } else {
+                match creg & 0b11 {
+                    0b01 => Some(Register::B(0)),
+                    0b10 => Some(Register::B(1)),
+                    0b11 => Some(Register::B(2)),
+                    _ => None,
+                }
+            }
+        };
+
+        if let Some(register) = register_option {
+            if z {
+                Some(ConditionalOperation::Zero(register))
+            } else {
+                Some(ConditionalOperation::NonZero(register))
+            }
+        } else {
+            None
+        }
     }
 }
 
-impl C64xInstruction for InvalidInstruction {
-    fn instruction(&self) -> String {
-        String::from("INVALID INSTRUCTION")
-    }
-    fn opcode(&self) -> u32 {
-        self.opcode
-    }
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-}
-
-pub struct InvalidCompactInstruction {
-    opcode: u16,
-}
-
-impl InvalidCompactInstruction {
-    pub fn new(opcode: u16) -> Self {
-        InvalidCompactInstruction { opcode }
-    }
-}
-
-impl C64xInstruction for InvalidCompactInstruction {
-    fn instruction(&self) -> String {
-        String::from("INVALID COMPACT INSTRUCTION")
-    }
-    fn opcode(&self) -> u32 {
-        self.opcode as u32
-    }
-    fn is_compact(&self) -> bool {
-        true
-    }
-    fn as_any(&self) -> &dyn Any {
-        self
+impl ToString for ConditionalOperation {
+    fn to_string(&self) -> String {
+        match self {
+            ConditionalOperation::NonZero(register) => register.to_string(),
+            ConditionalOperation::Zero(register) => format!("!{}", register.to_string()),
+        }
     }
 }

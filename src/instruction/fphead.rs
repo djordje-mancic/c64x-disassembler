@@ -37,8 +37,8 @@ pub struct CompactInstructionHeader {
     pub parallel_instructions: [bool; 14],
 }
 
-impl CompactInstructionHeader {
-    pub fn new(opcode: u32) -> Result<Self> {
+impl C64xInstruction for CompactInstructionHeader {
+    fn new(opcode: u32) -> Result<Self> {
         let format = [
             ParsingInstruction::BitArray {
                 size: 14,
@@ -139,9 +139,7 @@ impl CompactInstructionHeader {
             saturate,
         })
     }
-}
 
-impl C64xInstruction for CompactInstructionHeader {
     fn instruction(&self) -> String {
         String::from(".fphead")
     }

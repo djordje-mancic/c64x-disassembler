@@ -1,0 +1,38 @@
+use std::any::Any;
+
+use crate::instruction::C64xInstruction;
+
+pub struct InvalidInstruction {
+    opcode: u32,
+    compact: bool,
+}
+
+impl C64xInstruction for InvalidInstruction {
+    fn new(opcode: u32) -> std::io::Result<Self> {
+        Ok(InvalidInstruction {
+            opcode,
+            compact: false,
+        })
+    }
+
+    fn new_compact(opcode: u16) -> std::io::Result<Self> {
+        Ok(InvalidInstruction {
+            opcode: opcode as u32,
+            compact: true,
+        })
+    }
+
+    fn instruction(&self) -> String {
+        if self.compact {
+            String::from("INVALID INSTRUCTION")
+        } else {
+            String::from("INVALID COMPACT INSTRUCTION")
+        }
+    }
+    fn opcode(&self) -> u32 {
+        self.opcode
+    }
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}

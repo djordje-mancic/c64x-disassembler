@@ -3,6 +3,8 @@ use std::{
     io::{Error, ErrorKind, Result},
 };
 
+use crate::instruction::Register;
+
 pub fn parse(
     opcode: u32,
     format: &[ParsingInstruction],
@@ -44,6 +46,14 @@ pub fn parse(
                 temp_opcode >>= size;
                 resulting_map.insert(name.clone(), ParsedVariable::U32(value));
             }
+            ParsingInstruction::Register { size, name } => {
+                let mask = create_mask(*size);
+                let u32_value = temp_opcode & mask;
+                let side = ParsedVariable::try_get(&resulting_map, "s")?.get_bool()?;
+                let value = Register::from(u32_value as u8, side);
+                temp_opcode >>= size;
+                resulting_map.insert(name.clone(), ParsedVariable::Register(value));
+            }
         }
     }
 
@@ -56,6 +66,7 @@ pub enum ParsingInstruction {
     Bit { name: String },
     BitArray { size: usize, name: String },
     Unsigned { size: usize, name: String },
+    Register { size: usize, name: String },
 }
 
 #[derive(Clone)]
@@ -63,6 +74,7 @@ pub enum ParsedVariable {
     Bool(bool),
     BoolVec(Vec<bool>),
     U32(u32),
+    Register(Register),
 }
 
 impl ParsedVariable {
@@ -87,6 +99,14 @@ impl ParsedVariable {
             Ok(*value)
         } else {
             Err(Error::other("Not a U32 variable"))
+        }
+    }
+
+    pub fn get_register(&self) -> Result<Register> {
+        if let ParsedVariable::Register(value) = self {
+            Ok(*value)
+        } else {
+            Err(Error::other("Not a Register variable"))
         }
     }
 

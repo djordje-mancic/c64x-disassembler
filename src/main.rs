@@ -60,8 +60,22 @@ fn main() {
 
         let mut print_instruction = |instruction: Box<dyn C64xInstruction>| {
             println!(
-                "0x{address:08X}: {:<12} {:<12} {}",
+                "0x{address:08X}: {:<12}{:<4}{:<6} {:<12} {}",
                 format!("{:X}", instruction.opcode()),
+                {
+                    if instruction.is_parallel() {
+                        String::from("||")
+                    } else {
+                        String::new()
+                    }
+                },
+                {
+                    if let Some(operation) = instruction.conditional_operation() {
+                        format!("[{:>3}]", operation.to_string())
+                    } else {
+                        String::new()
+                    }
+                },
                 instruction.instruction(),
                 instruction.operands()
             );

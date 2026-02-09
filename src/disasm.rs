@@ -1,24 +1,24 @@
 use std::io::{Error, ErrorKind, Result};
 
 use crate::instruction::{
-    C64xInstruction, InvalidCompactInstruction, InvalidInstruction,
-    fphead::CompactInstructionHeader, no_unit::NoUnitInstruction, s_unit::SUnitInstruction,
+    C64xInstruction, fphead::CompactInstructionHeader, invalid::InvalidInstruction,
+    moving::MoveConstantInstruction, nop::NOPInstruction,
 };
 
 pub fn read_compact_instruction(opcode: u16) -> Result<Box<dyn C64xInstruction>> {
-    if let Ok(instruction) = SUnitInstruction::new_compact(opcode) {
+    if let Ok(instruction) = MoveConstantInstruction::new_compact(opcode) {
         return Ok(Box::new(instruction));
     }
 
-    if let Ok(instruction) = NoUnitInstruction::new_compact(opcode) {
+    if let Ok(instruction) = NOPInstruction::new_compact(opcode) {
         return Ok(Box::new(instruction));
     }
 
-    Ok(Box::new(InvalidCompactInstruction::new(opcode)))
+    Ok(Box::new(InvalidInstruction::new_compact(opcode)?))
 }
 
 pub fn read_instruction(opcode: u32) -> Result<Box<dyn C64xInstruction>> {
-    if let Ok(instruction) = SUnitInstruction::new(opcode) {
+    if let Ok(instruction) = MoveConstantInstruction::new(opcode) {
         return Ok(Box::new(instruction));
     }
 
@@ -26,11 +26,11 @@ pub fn read_instruction(opcode: u32) -> Result<Box<dyn C64xInstruction>> {
         return Ok(Box::new(instruction));
     }
 
-    if let Ok(instruction) = NoUnitInstruction::new(opcode) {
+    if let Ok(instruction) = NOPInstruction::new(opcode) {
         return Ok(Box::new(instruction));
     }
 
-    Ok(Box::new(InvalidInstruction::new(opcode)))
+    Ok(Box::new(InvalidInstruction::new(opcode)?))
 }
 
 /// Size of a regular instruction in bytes
@@ -72,7 +72,7 @@ pub fn read_packet(packet: [u8; PACKET_SIZE]) -> Result<Vec<Box<dyn C64xInstruct
                 packet[index_start + 2],
                 packet[index_start + 3],
             ]))?;
-            if instruction.as_any().is::<CompactInstructionHeader>() {
+            if instruction.as_any().is::<CompactInstructionHeader>() || false {
                 return Err(Error::new(
                     ErrorKind::InvalidData,
                     "Compact instruction header found in unusual place",
