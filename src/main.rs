@@ -1,6 +1,7 @@
 use std::{
-    fs::File,
-    io::{BufReader, ErrorKind, Read},
+    fs::{File, OpenOptions},
+    io::{BufReader, BufWriter, ErrorKind, Read, Write, stdin, stdout},
+    path::PathBuf,
     process::exit,
 };
 
@@ -19,12 +20,53 @@ mod instruction;
 #[derive(Parser)]
 #[command(version, about)]
 struct Args {
-    file: String,
+    file: PathBuf,
+
+    /// File path to output the disassembled code to.
+    /// 
+    /// If unspecified, the code is outputted to
+    /// standard output (stdout).
+    #[arg(short, long, value_name = "OUTPUT_PATH")]
+    output: Option<PathBuf>,
+
     /// Memory offset to apply to addresses.
     ///
     /// Note that this affects the packet fetching process.
-    #[arg(short, long, default_value_t = 0)]
+    #[arg(short = 'O', long, default_value_t = 0)]
     offset: u32,
+}
+
+fn handle_output_file(args: &Args) -> Option<BufWriter<File>> {
+    if let Some(path) = &args.output {
+        if path.exists() {
+            loop {
+                print!(
+                    "File at path {:?} already exists, overwrite? (Y/N): ",
+                    path
+                );
+                let _ = stdout().flush();
+                let mut input_line = String::new();
+                let _ = stdin().read_line(&mut input_line);
+                match input_line.to_uppercase().as_str() {
+                    "Y\n" => break,
+                    "N\n" => exit(-1),
+                    _ => (),
+                }
+            }
+        }
+        let file_result = OpenOptions::new()
+            .write(true)
+            .truncate(true)
+            .create(true)
+            .open(path);
+        let Ok(file) = file_result else {
+            let _ = file_result.inspect_err(|e| eprintln!("Couldn't create output file: {e}"));
+            exit(-1);
+        };
+        Some(BufWriter::new(file))
+    } else {
+        None
+    }
 }
 
 fn main() {
@@ -36,6 +78,14 @@ fn main() {
         exit(-1);
     };
     let mut reader = BufReader::new(file);
+    let mut output_file = handle_output_file(&args);
+    let output: &mut dyn Write = {
+        if let Some(file) = &mut output_file {
+            file
+        } else {
+            &mut stdout()
+        }
+    };
 
     let mut address = args.offset;
     loop {
@@ -59,8 +109,8 @@ fn main() {
         }
 
         let mut print_instruction = |instruction: Box<dyn C64xInstruction>| {
-            println!(
-                "0x{address:08X}: {:<12}{:<4}{:<6} {:<12} {}",
+            let line = format!(
+                "0x{address:08X}: {:<12}{:<4}{:<6} {:<12} {}\n",
                 format!("{:X}", instruction.opcode()),
                 {
                     if instruction.is_parallel() {
@@ -79,6 +129,11 @@ fn main() {
                 instruction.instruction(),
                 instruction.operands()
             );
+
+            output
+                .write_all(line.as_bytes())
+                .expect("Unable to write to output");
+
             if instruction.is_compact() {
                 address += COMPACT_INSTRUCTION_SIZE as u32;
             } else {
@@ -109,4 +164,5 @@ fn main() {
             }
         }
     }
+    output.flush().expect("Unable to flush");
 }
