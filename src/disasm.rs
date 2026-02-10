@@ -1,12 +1,19 @@
 use std::io::{Error, ErrorKind, Result};
 
 use crate::instruction::{
-    C64xInstruction, fphead::CompactInstructionHeader, invalid::InvalidInstruction,
-    moving::MoveConstantInstruction, nop::NOPInstruction,
+    C64xInstruction,
+    fphead::CompactInstructionHeader,
+    invalid::InvalidInstruction,
+    moving::{MoveConstantInstruction, MoveRegisterInstruction},
+    nop::NOPInstruction,
 };
 
 pub fn read_compact_instruction(opcode: u16) -> Result<Box<dyn C64xInstruction>> {
     if let Ok(instruction) = MoveConstantInstruction::new_compact(opcode) {
+        return Ok(Box::new(instruction));
+    }
+
+    if let Ok(instruction) = MoveRegisterInstruction::new_compact(opcode) {
         return Ok(Box::new(instruction));
     }
 
@@ -19,6 +26,10 @@ pub fn read_compact_instruction(opcode: u16) -> Result<Box<dyn C64xInstruction>>
 
 pub fn read_instruction(opcode: u32) -> Result<Box<dyn C64xInstruction>> {
     if let Ok(instruction) = MoveConstantInstruction::new(opcode) {
+        return Ok(Box::new(instruction));
+    }
+
+    if let Ok(instruction) = MoveRegisterInstruction::new(opcode) {
         return Ok(Box::new(instruction));
     }
 

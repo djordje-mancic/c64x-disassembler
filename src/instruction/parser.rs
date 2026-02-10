@@ -3,7 +3,7 @@ use std::{
     io::{Error, ErrorKind, Result},
 };
 
-use crate::instruction::Register;
+use crate::instruction::{ControlRegister, Register, Unit};
 
 pub fn parse(
     opcode: u32,
@@ -15,8 +15,7 @@ pub fn parse(
     for instruction in format {
         match instruction {
             ParsingInstruction::Match { size, value } => {
-                let mask = create_mask(*size);
-                let masked_value = temp_opcode & mask;
+                let masked_value = read_u32(&mut temp_opcode, *size);
                 if masked_value != *value {
                     return Err(Error::new(
                         ErrorKind::InvalidInput,
@@ -25,34 +24,96 @@ pub fn parse(
                         ),
                     ));
                 }
-                temp_opcode >>= size;
+            }
+            ParsingInstruction::MatchMultiple { size, values } => {
+                let masked_value = read_u32(&mut temp_opcode, *size);
+                for value in values {
+                    if masked_value == *value {
+                        continue;
+                    }
+                }
+                return Err(Error::new(
+                    ErrorKind::InvalidInput,
+                    format!("Opcode does not match instruction format (got {masked_value:b})"),
+                ));
             }
             ParsingInstruction::Bit { name } => {
-                let value = read_bool(temp_opcode);
-                resulting_map.insert(name.clone(), ParsedVariable::Bool(value));
-                temp_opcode >>= 1;
+                resulting_map.insert(
+                    name.clone(),
+                    ParsedVariable::Bool(read_bool(&mut temp_opcode)),
+                );
+            }
+            ParsingInstruction::BitMatch { name, value } => {
+                let read_value = read_bool(&mut temp_opcode);
+                if read_value != *value {
+                    return Err(Error::new(
+                        ErrorKind::InvalidInput,
+                        format!(
+                            "Opcode does not match instruction format ({name} is {read_value} instead of {value})"
+                        ),
+                    ));
+                }
+                resulting_map.insert(name.clone(), ParsedVariable::Bool(read_value));
             }
             ParsingInstruction::BitArray { size, name } => {
                 let mut value = Vec::<bool>::new();
                 for _ in 0..*size {
-                    value.push(read_bool(temp_opcode));
-                    temp_opcode >>= 1;
+                    value.push(read_bool(&mut temp_opcode));
                 }
                 resulting_map.insert(name.clone(), ParsedVariable::BoolVec(value));
             }
             ParsingInstruction::Unsigned { size, name } => {
-                let mask = create_mask(*size);
-                let value = temp_opcode & mask;
-                temp_opcode >>= size;
-                resulting_map.insert(name.clone(), ParsedVariable::U32(value));
+                resulting_map.insert(
+                    name.clone(),
+                    ParsedVariable::U32(read_u32(&mut temp_opcode, *size)),
+                );
             }
-            ParsingInstruction::Register { size, name } => {
-                let mask = create_mask(*size);
-                let u32_value = temp_opcode & mask;
-                let side = ParsedVariable::try_get(&resulting_map, "s")?.get_bool()?;
-                let value = Register::from(u32_value as u8, side);
-                temp_opcode >>= size;
+            ParsingInstruction::Register { size, name }
+            | ParsingInstruction::RegisterCrosspath { size, name }
+            | ParsingInstruction::RegisterPair { size, name } => {
+                let u32_value = read_u32(&mut temp_opcode, *size);
+                let side = {
+                    let mut s = ParsedVariable::try_get(&resulting_map, "s")?.get_bool()?;
+                    if let ParsingInstruction::RegisterCrosspath { size: _, name: _ } = instruction
+                    {
+                        let crosspath = ParsedVariable::try_get(&resulting_map, "x")?.get_bool()?;
+                        s ^= crosspath;
+                    }
+                    s
+                };
+                let value = {
+                    if let ParsingInstruction::RegisterPair { size: _, name: _ } = instruction {
+                        Register::from_pair(u32_value as u8, side)
+                    } else {
+                        Register::from(u32_value as u8, side)
+                    }
+                };
                 resulting_map.insert(name.clone(), ParsedVariable::Register(value));
+            }
+            ParsingInstruction::ControlRegister { size, name } => {
+                let low_bits = read_u32(&mut temp_opcode, *size);
+                let high_bits = {
+                    if let Ok(variable) = ParsedVariable::try_get(&resulting_map, "crhi") {
+                        variable.get_u32()?
+                    } else {
+                        0
+                    }
+                };
+                let Some(value) = ControlRegister::from(low_bits as u8, high_bits as u8) else {
+                    return Err(Error::other(format!(
+                        "Invalid Control Register values (got crhi crlo {high_bits:b} {low_bits:b})"
+                    )));
+                };
+                resulting_map.insert(name.clone(), ParsedVariable::ControlRegister(value));
+            }
+            ParsingInstruction::LSDUnit { name } => {
+                let unit = match read_u32(&mut temp_opcode, 2) {
+                    0 => Unit::L,
+                    1 => Unit::S,
+                    2 => Unit::D,
+                    num => return Err(Error::other(format!("Invalid LSDUnit (got {num})"))),
+                };
+                resulting_map.insert(name.clone(), ParsedVariable::Unit(unit));
             }
         }
     }
@@ -62,11 +123,49 @@ pub fn parse(
 
 #[derive(Debug)]
 pub enum ParsingInstruction {
-    Match { size: usize, value: u32 },
-    Bit { name: String },
-    BitArray { size: usize, name: String },
-    Unsigned { size: usize, name: String },
-    Register { size: usize, name: String },
+    Match {
+        size: usize,
+        value: u32,
+    },
+    MatchMultiple {
+        size: usize,
+        values: Vec<u32>,
+    },
+    Bit {
+        name: String,
+    },
+    BitMatch {
+        name: String,
+        value: bool,
+    },
+    BitArray {
+        size: usize,
+        name: String,
+    },
+    Unsigned {
+        size: usize,
+        name: String,
+    },
+    Register {
+        size: usize,
+        name: String,
+    },
+    RegisterPair {
+        size: usize,
+        name: String,
+    },
+    RegisterCrosspath {
+        size: usize,
+        name: String,
+    },
+    ControlRegister {
+        size: usize,
+        name: String,
+    },
+    /// For .L .S and .D compact maps.
+    LSDUnit {
+        name: String,
+    },
 }
 
 #[derive(Clone)]
@@ -75,6 +174,8 @@ pub enum ParsedVariable {
     BoolVec(Vec<bool>),
     U32(u32),
     Register(Register),
+    ControlRegister(ControlRegister),
+    Unit(Unit),
 }
 
 impl ParsedVariable {
@@ -110,6 +211,22 @@ impl ParsedVariable {
         }
     }
 
+    pub fn get_control_register(&self) -> Result<ControlRegister> {
+        if let ParsedVariable::ControlRegister(value) = self {
+            Ok(*value)
+        } else {
+            Err(Error::other("Not a Control Register variable"))
+        }
+    }
+
+    pub fn get_unit(&self) -> Result<Unit> {
+        if let ParsedVariable::Unit(value) = self {
+            Ok(*value)
+        } else {
+            Err(Error::other("Not a Unit variable"))
+        }
+    }
+
     pub fn try_get<'a>(hashmap: &'a HashMap<String, Self>, name: &str) -> Result<&'a Self> {
         let Some(value) = hashmap.get(name) else {
             return Err(Error::other("Parsing error"));
@@ -118,8 +235,17 @@ impl ParsedVariable {
     }
 }
 
-fn read_bool(opcode: u32) -> bool {
-    if opcode & 1 == 1 { true } else { false }
+fn read_bool(opcode: &mut u32) -> bool {
+    let value = if *opcode & 1 == 1 { true } else { false };
+    *opcode >>= 1;
+    value
+}
+
+fn read_u32(opcode: &mut u32, size: usize) -> u32 {
+    let mask = create_mask(size);
+    let value = *opcode & mask;
+    *opcode >>= size;
+    value
 }
 
 fn create_mask(size: usize) -> u32 {
