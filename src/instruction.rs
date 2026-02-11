@@ -349,7 +349,7 @@ pub enum ConditionalOperation {
 }
 
 impl ConditionalOperation {
-    pub fn from(creg: u32, z: bool) -> Option<Self> {
+    pub fn from(creg: u8, z: bool) -> Option<Self> {
         let register_option = {
             if creg & 0b100 == 0b100 {
                 match creg & 0b11 {

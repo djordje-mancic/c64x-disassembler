@@ -96,7 +96,7 @@ impl C64xInstruction for CompactInstructionHeader {
         };
         let loads_protected = ParsedVariable::try_get(&parsed_variables, "PROT")?.get_bool()?;
         let register_set = ParsedVariable::try_get(&parsed_variables, "RS")?.get_bool()?;
-        let data_sizes_1 = ParsedVariable::try_get(&parsed_variables, "DSZ_1")?.get_u32()?;
+        let data_sizes_1 = ParsedVariable::try_get(&parsed_variables, "DSZ_1")?.get_u8()?;
         let data_sizes_2 = ParsedVariable::try_get(&parsed_variables, "DSZ_2")?.get_bool()?;
         let primary_data_size = {
             if data_sizes_2 == true {

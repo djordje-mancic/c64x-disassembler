@@ -7,7 +7,7 @@ use std::io::{Error, ErrorKind, Result};
 pub struct NOPInstruction {
     pub opcode: u32,
     pub parallel: bool,
-    pub count: u32,
+    pub count: u8,
     compact: bool,
 }
 
@@ -28,7 +28,7 @@ impl C64xInstruction for NOPInstruction {
             .map_err(|e| Error::new(ErrorKind::InvalidInput, format!("Not a NOP/IDLE: {e}")))?;
         let next_parallel = ParsedVariable::try_get(&parsed_variables, "p")?.get_bool()?;
         let parallel = false;
-        let count = ParsedVariable::try_get(&parsed_variables, "src")?.get_u32()?;
+        let count = ParsedVariable::try_get(&parsed_variables, "src")?.get_u8()?;
         Ok(NOPInstruction {
             opcode,
             parallel,
@@ -50,7 +50,7 @@ impl C64xInstruction for NOPInstruction {
         ];
         let parsed_variables = parse(opcode as u32, &format)
             .map_err(|e| Error::new(ErrorKind::InvalidInput, format!("Not a NOP/IDLE: {e}")))?;
-        let count = ParsedVariable::try_get(&parsed_variables, "N3")?.get_u32()?;
+        let count = ParsedVariable::try_get(&parsed_variables, "N3")?.get_u8()?;
         Ok(NOPInstruction {
             opcode: opcode as u32,
             parallel: false,

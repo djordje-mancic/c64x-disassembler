@@ -63,9 +63,17 @@ pub fn parse(
                 resulting_map.insert(name.clone(), ParsedVariable::BoolVec(value));
             }
             ParsingInstruction::Unsigned { size, name } => {
+                let value = read_u32(&mut temp_opcode, *size);
+                let parsed_variable = {
+                    if *size > 8 {
+                        ParsedVariable::U32(value)
+                    } else {
+                        ParsedVariable::U8(value as u8)
+                    }
+                };
                 resulting_map.insert(
                     name.clone(),
-                    ParsedVariable::U32(read_u32(&mut temp_opcode, *size)),
+                    parsed_variable,
                 );
             }
             ParsingInstruction::Register { size, name }
@@ -91,15 +99,15 @@ pub fn parse(
                 resulting_map.insert(name.clone(), ParsedVariable::Register(value));
             }
             ParsingInstruction::ControlRegister { size, name } => {
-                let low_bits = read_u32(&mut temp_opcode, *size);
+                let low_bits = read_u32(&mut temp_opcode, *size) as u8;
                 let high_bits = {
                     if let Ok(variable) = ParsedVariable::try_get(&resulting_map, "crhi") {
-                        variable.get_u32()?
+                        variable.get_u8()?
                     } else {
                         0
                     }
                 };
-                let Some(value) = ControlRegister::from(low_bits as u8, high_bits as u8) else {
+                let Some(value) = ControlRegister::from(low_bits, high_bits) else {
                     return Err(Error::other(format!(
                         "Invalid Control Register values (got crhi crlo {high_bits:b} {low_bits:b})"
                     )));
@@ -173,6 +181,7 @@ pub enum ParsedVariable {
     Bool(bool),
     BoolVec(Vec<bool>),
     U32(u32),
+    U8(u8),
     Register(Register),
     ControlRegister(ControlRegister),
     Unit(Unit),
@@ -198,8 +207,20 @@ impl ParsedVariable {
     pub fn get_u32(&self) -> Result<u32> {
         if let ParsedVariable::U32(value) = self {
             Ok(*value)
+        } else if let ParsedVariable::U8(value) = self {
+            Ok(*value as u32)
         } else {
             Err(Error::other("Not a U32 variable"))
+        }
+    }
+
+    pub fn get_u8(&self) -> Result<u8> {
+        if let ParsedVariable::U8(value) = self {
+            Ok(*value)
+        } else if let ParsedVariable::U32(value) = self {
+            Ok(*value as u8)
+        } else {
+            Err(Error::other("Not a U8 variable"))
         }
     }
 

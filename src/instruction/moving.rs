@@ -135,7 +135,7 @@ impl C64xInstruction for MoveConstantInstruction {
                 }
             };
             let conditional_operation = {
-                let creg = ParsedVariable::try_get(&parsed_variables, "creg")?.get_u32()?;
+                let creg = ParsedVariable::try_get(&parsed_variables, "creg")?.get_u8()?;
                 let z = ParsedVariable::try_get(&parsed_variables, "z")?.get_bool()?;
                 ConditionalOperation::from(creg, z)
             };
@@ -220,18 +220,18 @@ impl C64xInstruction for MoveConstantInstruction {
             let Ok(parsed_variables) = parse(opcode as u32, format.as_slice()) else {
                 continue;
             };
-            let mut constant = ParsedVariable::try_get(&parsed_variables, "cst20")?.get_u32()?;
-            constant += ParsedVariable::try_get(&parsed_variables, "cst43")?.get_u32()? << 3;
+            let mut constant = ParsedVariable::try_get(&parsed_variables, "cst20")?.get_u8()?;
+            constant += ParsedVariable::try_get(&parsed_variables, "cst43")?.get_u8()? << 3;
             if unit == Unit::S {
-                constant += ParsedVariable::try_get(&parsed_variables, "cst65")?.get_u32()? << 5;
-                constant += ParsedVariable::try_get(&parsed_variables, "cst7")?.get_u32()? << 7;
+                constant += ParsedVariable::try_get(&parsed_variables, "cst65")?.get_u8()? << 5;
+                constant += ParsedVariable::try_get(&parsed_variables, "cst7")?.get_u8()? << 7;
             }
             let destination = ParsedVariable::try_get(&parsed_variables, "dst")?.get_register()?;
             return Ok(Self {
                 opcode: opcode as u32,
                 parallel: false,
                 high: false,
-                constant,
+                constant: constant as u32,
                 destination,
                 compact: true,
                 unit,
@@ -315,8 +315,7 @@ impl C64xInstruction for MoveConstantInstruction {
             let unit = ParsedVariable::try_get(&parsed_variables, "unit")?.get_unit()?;
             let conditional_operation = {
                 if let Ok(variable) = ParsedVariable::try_get(&parsed_variables, "cc") {
-                    let cc = variable.get_u32()?;
-                    match cc {
+                    match variable.get_u8()? {
                         0 => Some(ConditionalOperation::NonZero(Register::A(0))),
                         1 => Some(ConditionalOperation::Zero(Register::A(0))),
                         2 => Some(ConditionalOperation::NonZero(Register::B(0))),
@@ -619,7 +618,7 @@ impl MoveRegisterInstruction {
             let source = RegisterFile::GeneralPurpose(source_register);
             let destination = RegisterFile::GeneralPurpose(destination_register);
             let conditional_operation = {
-                let creg = ParsedVariable::try_get(&parsed_variables, "creg")?.get_u32()?;
+                let creg = ParsedVariable::try_get(&parsed_variables, "creg")?.get_u8()?;
                 let z = ParsedVariable::try_get(&parsed_variables, "z")?.get_bool()?;
                 ConditionalOperation::from(creg, z)
             };
@@ -802,7 +801,7 @@ impl MoveRegisterInstruction {
                 }
             };
             let conditional_operation = {
-                let creg = ParsedVariable::try_get(&parsed_variables, "creg")?.get_u32()?;
+                let creg = ParsedVariable::try_get(&parsed_variables, "creg")?.get_u8()?;
                 let z = ParsedVariable::try_get(&parsed_variables, "z")?.get_bool()?;
                 ConditionalOperation::from(creg, z)
             };
@@ -893,15 +892,15 @@ impl C64xInstruction for MoveRegisterInstruction {
             let side = ParsedVariable::try_get(&parsed_variables, "s")?.get_bool()?;
             let crosspath = ParsedVariable::try_get(&parsed_variables, "x")?.get_bool()?;
             let ms_bit = ParsedVariable::try_get(&parsed_variables, "ms_bit")?.get_bool()?;
-            let ms = ParsedVariable::try_get(&parsed_variables, "ms")?.get_u32()?;
+            let ms = ParsedVariable::try_get(&parsed_variables, "ms")?.get_u8()?;
             let mut source_register =
                 ParsedVariable::try_get(&parsed_variables, "src")?.get_register()?;
             let mut destination_register =
                 ParsedVariable::try_get(&parsed_variables, "dst")?.get_register()?;
             if ms_bit {
-                destination_register += (ms as u8) << 3;
+                destination_register += (ms) << 3;
             } else {
-                source_register += (ms as u8) << 3;
+                source_register += (ms) << 3;
             }
             if crosspath {
                 source_register = !source_register;
