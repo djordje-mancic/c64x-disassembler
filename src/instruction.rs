@@ -9,13 +9,13 @@ pub mod nop;
 pub mod parser;
 
 pub trait C64xInstruction {
-    fn new(opcode: u32) -> Result<Self>
+    fn new(_opcode: u32) -> Result<Self>
     where
         Self: Sized,
     {
         Err(Error::new(ErrorKind::Unsupported, "Instruction not 32-bit"))
     }
-    fn new_compact(opcode: u16) -> Result<Self>
+    fn new_compact(_opcode: u16) -> Result<Self>
     where
         Self: Sized,
     {

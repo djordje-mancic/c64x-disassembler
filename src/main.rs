@@ -23,7 +23,7 @@ struct Args {
     file: PathBuf,
 
     /// File path to output the disassembled code to.
-    /// 
+    ///
     /// If unspecified, the code is outputted to
     /// standard output (stdout).
     #[arg(short, long, value_name = "OUTPUT_PATH")]
@@ -40,10 +40,7 @@ fn handle_output_file(args: &Args) -> Option<BufWriter<File>> {
     if let Some(path) = &args.output {
         if path.exists() {
             loop {
-                print!(
-                    "File at path {:?} already exists, overwrite? (Y/N): ",
-                    path
-                );
+                print!("File at path {:?} already exists, overwrite? (Y/N): ", path);
                 let _ = stdout().flush();
                 let mut input_line = String::new();
                 let _ = stdin().read_line(&mut input_line);

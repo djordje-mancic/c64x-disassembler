@@ -71,10 +71,7 @@ pub fn parse(
                         ParsedVariable::U8(value as u8)
                     }
                 };
-                resulting_map.insert(
-                    name.clone(),
-                    parsed_variable,
-                );
+                resulting_map.insert(name.clone(), parsed_variable);
             }
             ParsingInstruction::Register { size, name }
             | ParsingInstruction::RegisterCrosspath { size, name }
