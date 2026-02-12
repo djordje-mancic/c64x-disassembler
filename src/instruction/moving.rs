@@ -42,12 +42,8 @@ impl C64xInstruction for MoveConstantInstruction {
                         size: 5,
                         name: String::from("dst"),
                     },
-                    ParsingInstruction::Bit {
-                        name: String::from("z"),
-                    },
-                    ParsingInstruction::Unsigned {
-                        size: 3,
-                        name: String::from("creg"),
+                    ParsingInstruction::ConditionalOperation {
+                        name: String::from("cond"),
                     },
                 ],
             ),
@@ -79,12 +75,8 @@ impl C64xInstruction for MoveConstantInstruction {
                         size: 5,
                         name: String::from("dst"),
                     },
-                    ParsingInstruction::Bit {
-                        name: String::from("z"),
-                    },
-                    ParsingInstruction::Unsigned {
-                        size: 3,
-                        name: String::from("creg"),
+                    ParsingInstruction::ConditionalOperation {
+                        name: String::from("cond"),
                     },
                 ],
             ),
@@ -110,12 +102,8 @@ impl C64xInstruction for MoveConstantInstruction {
                         size: 5,
                         name: String::from("dst"),
                     },
-                    ParsingInstruction::Bit {
-                        name: String::from("z"),
-                    },
-                    ParsingInstruction::Unsigned {
-                        size: 3,
-                        name: String::from("creg"),
+                    ParsingInstruction::ConditionalOperation {
+                        name: String::from("cond"),
                     },
                 ],
             ),
@@ -135,11 +123,8 @@ impl C64xInstruction for MoveConstantInstruction {
                     false
                 }
             };
-            let conditional_operation = {
-                let creg = ParsedVariable::try_get(&parsed_variables, "creg")?.get_u8()?;
-                let z = ParsedVariable::try_get(&parsed_variables, "z")?.get_bool()?;
-                ConditionalOperation::from(creg, z)
-            };
+            let conditional_operation =
+                ParsedVariable::try_get(&parsed_variables, "cond")?.get_conditional_operation()?;
             return Ok(Self {
                 opcode,
                 parallel,
@@ -426,12 +411,8 @@ impl MoveRegisterInstruction {
                         size: 5,
                         name: String::from("dst"),
                     },
-                    ParsingInstruction::Bit {
-                        name: String::from("z"),
-                    },
-                    ParsingInstruction::Unsigned {
-                        size: 3,
-                        name: String::from("creg"),
+                    ParsingInstruction::ConditionalOperation {
+                        name: String::from("cond"),
                     },
                 ],
             ),
@@ -456,12 +437,8 @@ impl MoveRegisterInstruction {
                         size: 5,
                         name: String::from("dst"),
                     },
-                    ParsingInstruction::Bit {
-                        name: String::from("z"),
-                    },
-                    ParsingInstruction::Unsigned {
-                        size: 3,
-                        name: String::from("creg"),
+                    ParsingInstruction::ConditionalOperation {
+                        name: String::from("cond"),
                     },
                 ],
             ),
@@ -494,12 +471,8 @@ impl MoveRegisterInstruction {
                         size: 5,
                         name: String::from("dst"),
                     },
-                    ParsingInstruction::Bit {
-                        name: String::from("z"),
-                    },
-                    ParsingInstruction::Unsigned {
-                        size: 3,
-                        name: String::from("creg"),
+                    ParsingInstruction::ConditionalOperation {
+                        name: String::from("cond"),
                     },
                 ],
             ),
@@ -524,12 +497,8 @@ impl MoveRegisterInstruction {
                         size: 5,
                         name: String::from("dst"),
                     },
-                    ParsingInstruction::Bit {
-                        name: String::from("z"),
-                    },
-                    ParsingInstruction::Unsigned {
-                        size: 3,
-                        name: String::from("creg"),
+                    ParsingInstruction::ConditionalOperation {
+                        name: String::from("cond"),
                     },
                 ],
             ),
@@ -558,12 +527,8 @@ impl MoveRegisterInstruction {
                         size: 5,
                         name: String::from("dst"),
                     },
-                    ParsingInstruction::Bit {
-                        name: String::from("z"),
-                    },
-                    ParsingInstruction::Unsigned {
-                        size: 3,
-                        name: String::from("creg"),
+                    ParsingInstruction::ConditionalOperation {
+                        name: String::from("cond"),
                     },
                 ],
             ),
@@ -595,12 +560,8 @@ impl MoveRegisterInstruction {
                         size: 5,
                         name: String::from("dst"),
                     },
-                    ParsingInstruction::Bit {
-                        name: String::from("z"),
-                    },
-                    ParsingInstruction::Unsigned {
-                        size: 3,
-                        name: String::from("creg"),
+                    ParsingInstruction::ConditionalOperation {
+                        name: String::from("cond"),
                     },
                 ],
             ),
@@ -618,11 +579,8 @@ impl MoveRegisterInstruction {
                 ParsedVariable::try_get(&parsed_variables, "dst")?.get_register()?;
             let source = RegisterFile::GeneralPurpose(source_register);
             let destination = RegisterFile::GeneralPurpose(destination_register);
-            let conditional_operation = {
-                let creg = ParsedVariable::try_get(&parsed_variables, "creg")?.get_u8()?;
-                let z = ParsedVariable::try_get(&parsed_variables, "z")?.get_bool()?;
-                ConditionalOperation::from(creg, z)
-            };
+            let conditional_operation =
+                ParsedVariable::try_get(&parsed_variables, "cond")?.get_conditional_operation()?;
             let delayed = if unit == Unit::M { true } else { false };
             return Ok(Self {
                 opcode,
@@ -665,12 +623,8 @@ impl MoveRegisterInstruction {
                     size: 5,
                     name: String::from("dst"),
                 },
-                ParsingInstruction::Bit {
-                    name: String::from("z"),
-                },
-                ParsingInstruction::Unsigned {
-                    size: 3,
-                    name: String::from("creg"),
+                ParsingInstruction::ConditionalOperation {
+                    name: String::from("cond"),
                 },
             ],
             vec![
@@ -697,12 +651,8 @@ impl MoveRegisterInstruction {
                     size: 5,
                     name: String::from("crlo"),
                 },
-                ParsingInstruction::Bit {
-                    name: String::from("z"),
-                },
-                ParsingInstruction::Unsigned {
-                    size: 3,
-                    name: String::from("creg"),
+                ParsingInstruction::ConditionalOperation {
+                    name: String::from("cond"),
                 },
             ],
             vec![
@@ -732,12 +682,8 @@ impl MoveRegisterInstruction {
                     size: 5,
                     name: String::from("dst"),
                 },
-                ParsingInstruction::Bit {
-                    name: String::from("z"),
-                },
-                ParsingInstruction::Unsigned {
-                    size: 3,
-                    name: String::from("creg"),
+                ParsingInstruction::ConditionalOperation {
+                    name: String::from("cond"),
                 },
             ],
             vec![
@@ -767,12 +713,8 @@ impl MoveRegisterInstruction {
                     size: 5,
                     name: String::from("crlo"),
                 },
-                ParsingInstruction::Bit {
-                    name: String::from("z"),
-                },
-                ParsingInstruction::Unsigned {
-                    size: 3,
-                    name: String::from("creg"),
+                ParsingInstruction::ConditionalOperation {
+                    name: String::from("cond"),
                 },
             ],
         ];
@@ -801,11 +743,8 @@ impl MoveRegisterInstruction {
                     continue;
                 }
             };
-            let conditional_operation = {
-                let creg = ParsedVariable::try_get(&parsed_variables, "creg")?.get_u8()?;
-                let z = ParsedVariable::try_get(&parsed_variables, "z")?.get_bool()?;
-                ConditionalOperation::from(creg, z)
-            };
+            let conditional_operation =
+                ParsedVariable::try_get(&parsed_variables, "cond")?.get_conditional_operation()?;
             return Ok(Self {
                 opcode,
                 compact: false,

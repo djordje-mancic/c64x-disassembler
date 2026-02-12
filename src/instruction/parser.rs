@@ -4,7 +4,7 @@ use std::{
 };
 
 use crate::instruction::{
-    Unit,
+    ConditionalOperation, Unit,
     register::{ControlRegister, Register},
 };
 
@@ -123,6 +123,14 @@ pub fn parse(
                 };
                 resulting_map.insert(name.clone(), ParsedVariable::Unit(unit));
             }
+            ParsingInstruction::ConditionalOperation { name } => {
+                let z = read_bool(&mut temp_opcode);
+                let creg = read_u32(&mut temp_opcode, 3) as u8;
+                resulting_map.insert(
+                    name.clone(),
+                    ParsedVariable::ConditionalOperation(ConditionalOperation::from(creg, z)),
+                );
+            }
         }
     }
 
@@ -174,6 +182,9 @@ pub enum ParsingInstruction {
     LSDUnit {
         name: String,
     },
+    ConditionalOperation {
+        name: String,
+    },
 }
 
 #[derive(Clone)]
@@ -185,6 +196,7 @@ pub enum ParsedVariable {
     Register(Register),
     ControlRegister(ControlRegister),
     Unit(Unit),
+    ConditionalOperation(Option<ConditionalOperation>),
 }
 
 impl ParsedVariable {
@@ -245,6 +257,14 @@ impl ParsedVariable {
             Ok(*value)
         } else {
             Err(Error::other("Not a Unit variable"))
+        }
+    }
+
+    pub fn get_conditional_operation(&self) -> Result<Option<ConditionalOperation>> {
+        if let ParsedVariable::ConditionalOperation(value) = self {
+            Ok(*value)
+        } else {
+            Err(Error::other("Not a Conditional Operation variable"))
         }
     }
 
