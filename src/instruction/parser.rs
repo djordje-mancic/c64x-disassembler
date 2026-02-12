@@ -3,7 +3,10 @@ use std::{
     io::{Error, ErrorKind, Result},
 };
 
-use crate::instruction::{ControlRegister, Register, Unit};
+use crate::instruction::{
+    Unit,
+    register::{ControlRegister, Register},
+};
 
 pub fn parse(
     opcode: u32,

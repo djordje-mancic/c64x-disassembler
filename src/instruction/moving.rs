@@ -1,6 +1,7 @@
 use crate::instruction::{
-    C64xInstruction, ConditionalOperation, ControlRegister, Register, RegisterFile, Unit,
+    C64xInstruction, ConditionalOperation, Unit,
     parser::{ParsedVariable, ParsingInstruction, parse},
+    register::{ControlRegister, Register, RegisterFile},
 };
 
 pub struct MoveConstantInstruction {
