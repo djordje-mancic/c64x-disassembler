@@ -11,7 +11,7 @@ use crate::{
     disasm::{
         COMPACT_INSTRUCTION_SIZE, INSTRUCTION_SIZE, PACKET_SIZE, read_instruction, read_packet,
     },
-    instruction::C64xInstruction,
+    instruction::{C64xInstruction, ConditionalOperation},
 };
 
 mod disasm;
@@ -117,7 +117,10 @@ fn main() {
                     }
                 },
                 {
-                    if let Some(operation) = instruction.conditional_operation() {
+                    if let Some(operation) = instruction.conditional_operation()
+                        && operation != ConditionalOperation::ReservedLow
+                        && operation != ConditionalOperation::ReservedHigh
+                    {
                         format!("[{:>3}]", operation.to_string())
                     } else {
                         String::new()

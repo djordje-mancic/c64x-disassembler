@@ -120,12 +120,19 @@ impl ToString for Unit {
 
 #[derive(PartialEq, Eq, Clone, Copy)]
 pub enum ConditionalOperation {
+    ReservedLow,
+    ReservedHigh,
     Zero(Register),
     NonZero(Register),
 }
 
 impl ConditionalOperation {
     pub fn from(creg: u8, z: bool) -> Option<Self> {
+        if creg == 0 && z == true {
+            return Some(ConditionalOperation::ReservedLow);
+        } else if creg == 0b111 {
+            return Some(ConditionalOperation::ReservedHigh);
+        }
         let register_option = {
             if creg & 0b100 == 0b100 {
                 match creg & 0b11 {
@@ -161,6 +168,7 @@ impl ToString for ConditionalOperation {
         match self {
             ConditionalOperation::NonZero(register) => register.to_string(),
             ConditionalOperation::Zero(register) => format!("!{}", register.to_string()),
+            ConditionalOperation::ReservedLow | ConditionalOperation::ReservedHigh => String::new()
         }
     }
 }
