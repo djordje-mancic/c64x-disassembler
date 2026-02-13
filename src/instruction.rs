@@ -27,7 +27,7 @@ impl<T: Any> AsAny for T {
 }
 
 pub trait C64xInstruction: AsAny {
-    fn new(_opcode: u32) -> Result<Self>
+    fn new(_opcode: u32, _fphead: Option<&CompactInstructionHeader>) -> Result<Self>
     where
         Self: Sized,
     {

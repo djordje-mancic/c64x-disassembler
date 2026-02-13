@@ -32,28 +32,31 @@ pub fn read_compact_instruction(
     Ok(Box::new(InvalidInstruction::new_compact(opcode, fphead)?))
 }
 
-pub fn read_instruction(opcode: u32) -> Result<Box<dyn C64xInstruction>> {
-    if let Ok(instruction) = MoveConstantInstruction::new(opcode) {
+pub fn read_instruction(
+    opcode: u32,
+    fphead: Option<&CompactInstructionHeader>,
+) -> Result<Box<dyn C64xInstruction>> {
+    if let Ok(instruction) = MoveConstantInstruction::new(opcode, fphead) {
         return Ok(Box::new(instruction));
     }
 
-    if let Ok(instruction) = MoveRegisterInstruction::new(opcode) {
+    if let Ok(instruction) = MoveRegisterInstruction::new(opcode, fphead) {
         return Ok(Box::new(instruction));
     }
 
-    if let Ok(instruction) = BranchInstruction::new(opcode) {
+    if let Ok(instruction) = BranchInstruction::new(opcode, fphead) {
         return Ok(Box::new(instruction));
     }
 
-    if let Ok(instruction) = CompactInstructionHeader::new(opcode) {
+    if let Ok(instruction) = CompactInstructionHeader::new(opcode, fphead) {
         return Ok(Box::new(instruction));
     }
 
-    if let Ok(instruction) = NOPInstruction::new(opcode) {
+    if let Ok(instruction) = NOPInstruction::new(opcode, fphead) {
         return Ok(Box::new(instruction));
     }
 
-    Ok(Box::new(InvalidInstruction::new(opcode)?))
+    Ok(Box::new(InvalidInstruction::new(opcode, fphead)?))
 }
 
 /// Size of a regular instruction in bytes
@@ -68,12 +71,15 @@ pub fn read_packet(
     address: u32,
 ) -> Result<Vec<Box<dyn C64xInstruction>>> {
     let mut vec: Vec<Box<dyn C64xInstruction>> = vec![];
-    let last_instruction = read_instruction(u32::from_le_bytes([
-        packet[PACKET_SIZE - 4],
-        packet[PACKET_SIZE - 3],
-        packet[PACKET_SIZE - 2],
-        packet[PACKET_SIZE - 1],
-    ]))?;
+    let last_instruction = read_instruction(
+        u32::from_le_bytes([
+            packet[PACKET_SIZE - 4],
+            packet[PACKET_SIZE - 3],
+            packet[PACKET_SIZE - 2],
+            packet[PACKET_SIZE - 1],
+        ]),
+        None,
+    )?;
     let fphead_option = last_instruction
         .as_any()
         .downcast_ref::<CompactInstructionHeader>();
@@ -89,12 +95,15 @@ pub fn read_packet(
                     fphead,
                 )?
             } else {
-                read_instruction(u32::from_le_bytes([
-                    packet[index],
-                    packet[index + 1],
-                    packet[index + 2],
-                    packet[index + 3],
-                ]))?
+                read_instruction(
+                    u32::from_le_bytes([
+                        packet[index],
+                        packet[index + 1],
+                        packet[index + 2],
+                        packet[index + 3],
+                    ]),
+                    fphead_option,
+                )?
             }
         };
 

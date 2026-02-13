@@ -12,7 +12,7 @@ pub struct NOPInstruction {
 }
 
 impl C64xInstruction for NOPInstruction {
-    fn new(opcode: u32) -> Result<Self> {
+    fn new(opcode: u32, _fphead: Option<&super::fphead::CompactInstructionHeader>) -> Result<Self> {
         let format = [
             ParsingInstruction::Bit {
                 name: String::from("p"),

@@ -16,7 +16,10 @@ pub struct MoveConstantInstruction {
 }
 
 impl C64xInstruction for MoveConstantInstruction {
-    fn new(opcode: u32) -> std::io::Result<Self> {
+    fn new(
+        opcode: u32,
+        _fphead: Option<&super::fphead::CompactInstructionHeader>,
+    ) -> std::io::Result<Self> {
         let format_combinations = [
             (
                 Unit::S,
@@ -761,7 +764,10 @@ impl MoveRegisterInstruction {
 }
 
 impl C64xInstruction for MoveRegisterInstruction {
-    fn new(opcode: u32) -> std::io::Result<Self> {
+    fn new(
+        opcode: u32,
+        _fphead: Option<&super::fphead::CompactInstructionHeader>,
+    ) -> std::io::Result<Self> {
         if let Ok(ret_val) = Self::new_mv(opcode) {
             return Ok(ret_val);
         } else if let Ok(ret_val) = Self::new_mvc(opcode) {

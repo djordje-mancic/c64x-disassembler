@@ -160,7 +160,7 @@ fn main() {
                 .expect("Buf error")
                 .clone();
             let opcode = u32::from_le_bytes(opcode_bytes);
-            if let Ok(instruction) = read_instruction(opcode) {
+            if let Ok(instruction) = read_instruction(opcode, None) {
                 print_instruction(instruction, &mut address, output);
             } else {
                 address += INSTRUCTION_SIZE as u32;

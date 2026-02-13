@@ -35,7 +35,7 @@ pub struct CompactInstructionHeader {
 }
 
 impl C64xInstruction for CompactInstructionHeader {
-    fn new(opcode: u32) -> Result<Self> {
+    fn new(opcode: u32, _fphead: Option<&Self>) -> Result<Self> {
         let format = [
             ParsingInstruction::BitArray {
                 size: 14,

@@ -8,7 +8,10 @@ pub struct InvalidInstruction {
 }
 
 impl C64xInstruction for InvalidInstruction {
-    fn new(opcode: u32) -> std::io::Result<Self> {
+    fn new(
+        opcode: u32,
+        _fphead: Option<&super::fphead::CompactInstructionHeader>,
+    ) -> std::io::Result<Self> {
         Ok(InvalidInstruction {
             opcode,
             compact: false,

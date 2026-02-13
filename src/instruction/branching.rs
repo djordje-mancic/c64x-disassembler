@@ -34,7 +34,7 @@ impl BranchInstruction {
 }
 
 impl C64xInstruction for BranchInstruction {
-    fn new(opcode: u32) -> std::io::Result<Self> {
+    fn new(opcode: u32, fphead: Option<&CompactInstructionHeader>) -> std::io::Result<Self> {
         let formats = [
             vec![
                 ParsingInstruction::Bit {
@@ -166,7 +166,7 @@ impl C64xInstruction for BranchInstruction {
             let branch_using = {
                 if let Ok(variable) = ParsedVariable::try_get(&parsed_variables, "cst") {
                     BranchUsing::Displacement(
-                        variable.get_i32()? << { if nop_count > 0 { 1 } else { 2 } },
+                        variable.get_i32()? << { if nop_count > 0 && fphead.is_some() { 1 } else { 2 } },
                     )
                 } else if let Ok(variable) = ParsedVariable::try_get(&parsed_variables, "src") {
                     BranchUsing::Register(variable.get_register()?)
