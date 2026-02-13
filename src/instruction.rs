@@ -9,7 +9,22 @@ pub mod nop;
 pub mod parser;
 pub mod register;
 
-pub trait C64xInstruction {
+pub trait AsAny {
+    fn as_any(&self) -> &dyn Any;
+    fn as_any_mut(&mut self) -> &mut dyn Any;
+}
+
+impl<T: Any> AsAny for T {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
+    }
+}
+
+pub trait C64xInstruction: AsAny {
     fn new(_opcode: u32) -> Result<Self>
     where
         Self: Sized,
@@ -42,7 +57,6 @@ pub trait C64xInstruction {
     fn conditional_operation(&self) -> Option<ConditionalOperation> {
         None
     }
-    fn as_any(&self) -> &dyn Any;
 }
 
 #[derive(PartialEq, Eq)]

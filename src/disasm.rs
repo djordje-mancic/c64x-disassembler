@@ -51,7 +51,10 @@ pub const COMPACT_INSTRUCTION_SIZE: usize = 2;
 /// Size of an FP (Fetch Packet) in bytes
 pub const PACKET_SIZE: usize = 8 * INSTRUCTION_SIZE;
 
-pub fn read_packet(packet: [u8; PACKET_SIZE]) -> Result<Vec<Box<dyn C64xInstruction>>> {
+pub fn read_packet(
+    packet: [u8; PACKET_SIZE],
+    address: u32,
+) -> Result<Vec<Box<dyn C64xInstruction>>> {
     let mut vec: Vec<Box<dyn C64xInstruction>> = vec![];
     let last_instruction = read_instruction(u32::from_le_bytes([
         packet[PACKET_SIZE - 4],
@@ -63,34 +66,36 @@ pub fn read_packet(packet: [u8; PACKET_SIZE]) -> Result<Vec<Box<dyn C64xInstruct
         .as_any()
         .downcast_ref::<CompactInstructionHeader>();
 
-    for i in 0..7 {
-        let index_start = i * 4;
+    let mut index = 0;
+    while index < 7 * 4 {
+        let instruction = {
         if let Some(fphead) = fphead_option
-            && fphead.layout[i]
+                && fphead.layout[index / 4]
         {
-            vec.push(read_compact_instruction(u16::from_le_bytes([
-                packet[index_start],
-                packet[index_start + 1],
-            ]))?);
-            vec.push(read_compact_instruction(u16::from_le_bytes([
-                packet[index_start + 2],
-                packet[index_start + 3],
-            ]))?);
+                read_compact_instruction(u16::from_le_bytes([packet[index], packet[index + 1]]))?
         } else {
-            let instruction = read_instruction(u32::from_le_bytes([
-                packet[index_start],
-                packet[index_start + 1],
-                packet[index_start + 2],
-                packet[index_start + 3],
-            ]))?;
-            if instruction.as_any().is::<CompactInstructionHeader>() || false {
+                read_instruction(u32::from_le_bytes([
+                    packet[index],
+                    packet[index + 1],
+                    packet[index + 2],
+                    packet[index + 3],
+                ]))?
+            }
+        };
+
+        if instruction.as_any().is::<CompactInstructionHeader>() {
                 return Err(Error::new(
                     ErrorKind::InvalidData,
                     "Compact instruction header found in unusual place",
                 ));
             }
-            vec.push(instruction);
+
+        if instruction.is_compact() {
+            index += 2;
+        } else {
+            index += 4;
         }
+            vec.push(instruction);
     }
 
     vec.push(last_instruction);

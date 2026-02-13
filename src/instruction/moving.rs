@@ -350,10 +350,6 @@ impl C64xInstruction for MoveConstantInstruction {
         self.opcode
     }
 
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-
     fn operands(&self) -> String {
         format!("0x{:04X}, {}", self.constant, self.destination.to_string())
     }
@@ -917,10 +913,6 @@ impl C64xInstruction for MoveRegisterInstruction {
 
     fn opcode(&self) -> u32 {
         self.opcode
-    }
-
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
     }
 
     fn is_compact(&self) -> bool {

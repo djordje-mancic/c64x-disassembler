@@ -71,10 +71,6 @@ impl C64xInstruction for NOPInstruction {
         self.opcode
     }
 
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-
     fn operands(&self) -> String {
         if self.count > 0 && self.count != 0b1111 {
             format!("{}", self.count + 1)

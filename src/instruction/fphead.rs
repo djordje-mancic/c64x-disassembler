@@ -183,7 +183,4 @@ impl C64xInstruction for CompactInstructionHeader {
     fn opcode(&self) -> u32 {
         self.opcode
     }
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
 }

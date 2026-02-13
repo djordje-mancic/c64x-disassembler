@@ -32,9 +32,6 @@ impl C64xInstruction for InvalidInstruction {
     fn opcode(&self) -> u32 {
         self.opcode
     }
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
     fn is_compact(&self) -> bool {
         self.compact
     }

@@ -66,6 +66,46 @@ fn handle_output_file(args: &Args) -> Option<BufWriter<File>> {
     }
 }
 
+fn print_instruction(
+    instruction: Box<dyn C64xInstruction>,
+    address: &mut u32,
+    output: &mut dyn Write,
+) {
+    let line = format!(
+        "0x{address:08X}: {:<12}{:<4}{:<6} {:<12} {}\n",
+        format!("{:X}", instruction.opcode()),
+        {
+            if instruction.is_parallel() {
+                String::from("||")
+            } else {
+                String::new()
+            }
+        },
+        {
+            if let Some(operation) = instruction.conditional_operation()
+                && operation != ConditionalOperation::ReservedLow
+                && operation != ConditionalOperation::ReservedHigh
+            {
+                format!("[{:>3}]", operation.to_string())
+            } else {
+                String::new()
+            }
+        },
+        instruction.instruction(),
+        instruction.operands()
+    );
+
+    output
+        .write_all(line.as_bytes())
+        .expect("Unable to write to output");
+
+    if instruction.is_compact() {
+        *address += COMPACT_INSTRUCTION_SIZE as u32;
+    } else {
+        *address += INSTRUCTION_SIZE as u32;
+    }
+}
+
 fn main() {
     let args = Args::parse();
 
@@ -105,46 +145,10 @@ fn main() {
             break;
         }
 
-        let mut print_instruction = |instruction: Box<dyn C64xInstruction>| {
-            let line = format!(
-                "0x{address:08X}: {:<12}{:<4}{:<6} {:<12} {}\n",
-                format!("{:X}", instruction.opcode()),
-                {
-                    if instruction.is_parallel() {
-                        String::from("||")
-                    } else {
-                        String::new()
-                    }
-                },
-                {
-                    if let Some(operation) = instruction.conditional_operation()
-                        && operation != ConditionalOperation::ReservedLow
-                        && operation != ConditionalOperation::ReservedHigh
-                    {
-                        format!("[{:>3}]", operation.to_string())
-                    } else {
-                        String::new()
-                    }
-                },
-                instruction.instruction(),
-                instruction.operands()
-            );
-
-            output
-                .write_all(line.as_bytes())
-                .expect("Unable to write to output");
-
-            if instruction.is_compact() {
-                address += COMPACT_INSTRUCTION_SIZE as u32;
-            } else {
-                address += INSTRUCTION_SIZE as u32;
-            }
-        };
-
         if do_read_packet {
-            if let Ok(packet_instructions) = read_packet(buf) {
+            if let Ok(packet_instructions) = read_packet(buf, address) {
                 for instruction in packet_instructions {
-                    print_instruction(instruction);
+                    print_instruction(instruction, &mut address, output);
                 }
             } else {
                 address += PACKET_SIZE as u32;
@@ -157,7 +161,7 @@ fn main() {
                 .clone();
             let opcode = u32::from_le_bytes(opcode_bytes);
             if let Ok(instruction) = read_instruction(opcode) {
-                print_instruction(instruction);
+                print_instruction(instruction, &mut address, output);
             } else {
                 address += INSTRUCTION_SIZE as u32;
                 continue;
