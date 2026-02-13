@@ -2,26 +2,34 @@ use std::io::{Error, ErrorKind, Result};
 
 use crate::instruction::{
     C64xInstruction,
+    branching::BranchInstruction,
     fphead::CompactInstructionHeader,
     invalid::InvalidInstruction,
     moving::{MoveConstantInstruction, MoveRegisterInstruction},
     nop::NOPInstruction,
 };
 
-pub fn read_compact_instruction(opcode: u16) -> Result<Box<dyn C64xInstruction>> {
-    if let Ok(instruction) = MoveConstantInstruction::new_compact(opcode) {
+pub fn read_compact_instruction(
+    opcode: u16,
+    fphead: &CompactInstructionHeader,
+) -> Result<Box<dyn C64xInstruction>> {
+    if let Ok(instruction) = MoveConstantInstruction::new_compact(opcode, fphead) {
         return Ok(Box::new(instruction));
     }
 
-    if let Ok(instruction) = MoveRegisterInstruction::new_compact(opcode) {
+    if let Ok(instruction) = MoveRegisterInstruction::new_compact(opcode, fphead) {
         return Ok(Box::new(instruction));
     }
 
-    if let Ok(instruction) = NOPInstruction::new_compact(opcode) {
+    if let Ok(instruction) = BranchInstruction::new_compact(opcode, fphead) {
         return Ok(Box::new(instruction));
     }
 
-    Ok(Box::new(InvalidInstruction::new_compact(opcode)?))
+    if let Ok(instruction) = NOPInstruction::new_compact(opcode, fphead) {
+        return Ok(Box::new(instruction));
+    }
+
+    Ok(Box::new(InvalidInstruction::new_compact(opcode, fphead)?))
 }
 
 pub fn read_instruction(opcode: u32) -> Result<Box<dyn C64xInstruction>> {
@@ -30,6 +38,10 @@ pub fn read_instruction(opcode: u32) -> Result<Box<dyn C64xInstruction>> {
     }
 
     if let Ok(instruction) = MoveRegisterInstruction::new(opcode) {
+        return Ok(Box::new(instruction));
+    }
+
+    if let Ok(instruction) = BranchInstruction::new(opcode) {
         return Ok(Box::new(instruction));
     }
 
@@ -69,11 +81,14 @@ pub fn read_packet(
     let mut index = 0;
     while index < 7 * 4 {
         let instruction = {
-        if let Some(fphead) = fphead_option
+            if let Some(fphead) = fphead_option
                 && fphead.layout[index / 4]
-        {
-                read_compact_instruction(u16::from_le_bytes([packet[index], packet[index + 1]]))?
-        } else {
+            {
+                read_compact_instruction(
+                    u16::from_le_bytes([packet[index], packet[index + 1]]),
+                    fphead,
+                )?
+            } else {
                 read_instruction(u32::from_le_bytes([
                     packet[index],
                     packet[index + 1],
@@ -84,20 +99,29 @@ pub fn read_packet(
         };
 
         if instruction.as_any().is::<CompactInstructionHeader>() {
-                return Err(Error::new(
-                    ErrorKind::InvalidData,
-                    "Compact instruction header found in unusual place",
-                ));
-            }
+            return Err(Error::new(
+                ErrorKind::InvalidData,
+                "Compact instruction header found in unusual place",
+            ));
+        }
 
         if instruction.is_compact() {
             index += 2;
         } else {
             index += 4;
         }
-            vec.push(instruction);
+        vec.push(instruction);
     }
 
     vec.push(last_instruction);
+
+    for instruction in &mut vec {
+        if let Some(branch_instruction) =
+            instruction.as_any_mut().downcast_mut::<BranchInstruction>()
+        {
+            branch_instruction.set_pce1_address(address);
+        }
+    }
+
     Ok(vec)
 }

@@ -76,6 +76,10 @@ pub fn parse(
                 };
                 resulting_map.insert(name.clone(), parsed_variable);
             }
+            ParsingInstruction::Signed { size, name } => {
+                let value = read_i32(&mut temp_opcode, *size);
+                resulting_map.insert(name.clone(), ParsedVariable::I32(value));
+            }
             ParsingInstruction::Register { size, name }
             | ParsingInstruction::RegisterCrosspath { size, name }
             | ParsingInstruction::RegisterPair { size, name } => {
@@ -162,6 +166,10 @@ pub enum ParsingInstruction {
         size: usize,
         name: String,
     },
+    Signed {
+        size: usize,
+        name: String,
+    },
     Register {
         size: usize,
         name: String,
@@ -193,6 +201,7 @@ pub enum ParsedVariable {
     BoolVec(Vec<bool>),
     U32(u32),
     U8(u8),
+    I32(i32),
     Register(Register),
     ControlRegister(ControlRegister),
     Unit(Unit),
@@ -221,6 +230,18 @@ impl ParsedVariable {
             Ok(*value)
         } else if let ParsedVariable::U8(value) = self {
             Ok(*value as u32)
+        } else {
+            Err(Error::other("Not a U32 variable"))
+        }
+    }
+
+    pub fn get_i32(&self) -> Result<i32> {
+        if let ParsedVariable::I32(value) = self {
+            Ok(*value)
+        } else if let ParsedVariable::U32(value) = self {
+            Ok(u32::cast_signed(*value))
+        } else if let ParsedVariable::U8(value) = self {
+            Ok(u8::cast_signed(*value) as i32)
         } else {
             Err(Error::other("Not a U32 variable"))
         }
@@ -279,6 +300,23 @@ impl ParsedVariable {
 fn read_bool(opcode: &mut u32) -> bool {
     let value = if *opcode & 1 == 1 { true } else { false };
     *opcode >>= 1;
+    value
+}
+
+fn read_i32(opcode: &mut u32, size: usize) -> i32 {
+    let mask = create_mask(size);
+    let mut value_u32 = *opcode & mask;
+    *opcode >>= size;
+    let sign_bit_mask = 1 << (size - 1);
+    let value = {
+        if value_u32 & sign_bit_mask == sign_bit_mask {
+            value_u32 ^= mask;
+            value_u32 += 1;
+            -(value_u32 as i32)
+        } else {
+            value_u32 as i32
+        }
+    };
     value
 }
 

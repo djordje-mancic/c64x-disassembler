@@ -15,7 +15,10 @@ impl C64xInstruction for InvalidInstruction {
         })
     }
 
-    fn new_compact(opcode: u16) -> std::io::Result<Self> {
+    fn new_compact(
+        opcode: u16,
+        _fphead: &super::fphead::CompactInstructionHeader,
+    ) -> std::io::Result<Self> {
         Ok(InvalidInstruction {
             opcode: opcode as u32,
             compact: true,

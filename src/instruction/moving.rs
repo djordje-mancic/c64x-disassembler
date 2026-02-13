@@ -142,7 +142,10 @@ impl C64xInstruction for MoveConstantInstruction {
         ))
     }
 
-    fn new_compact(opcode: u16) -> std::io::Result<Self> {
+    fn new_compact(
+        opcode: u16,
+        _fphead: &super::fphead::CompactInstructionHeader,
+    ) -> std::io::Result<Self> {
         let format_combinations = [
             (
                 Unit::S,
@@ -771,7 +774,10 @@ impl C64xInstruction for MoveRegisterInstruction {
         ))
     }
 
-    fn new_compact(opcode: u16) -> std::io::Result<Self> {
+    fn new_compact(
+        opcode: u16,
+        _fphead: &super::fphead::CompactInstructionHeader,
+    ) -> std::io::Result<Self> {
         let mv_format = [
             ParsingInstruction::Bit {
                 name: String::from("s"),

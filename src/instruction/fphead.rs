@@ -1,7 +1,4 @@
-use std::{
-    any::Any,
-    io::{Error, ErrorKind, Result},
-};
+use std::io::{Error, ErrorKind, Result};
 
 use crate::instruction::{
     C64xInstruction, DataSize,

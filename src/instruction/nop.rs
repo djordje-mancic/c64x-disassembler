@@ -37,7 +37,7 @@ impl C64xInstruction for NOPInstruction {
         })
     }
 
-    fn new_compact(opcode: u16) -> Result<Self> {
+    fn new_compact(opcode: u16, _fphead: &super::fphead::CompactInstructionHeader) -> Result<Self> {
         let format = [
             ParsingInstruction::Match {
                 size: 13,

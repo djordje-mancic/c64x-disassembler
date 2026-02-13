@@ -1,7 +1,9 @@
+use crate::instruction::fphead::CompactInstructionHeader;
 use crate::instruction::register::Register;
 use std::any::Any;
 use std::io::{Error, ErrorKind, Result};
 
+pub mod branching;
 pub mod fphead;
 pub mod invalid;
 pub mod moving;
@@ -31,7 +33,7 @@ pub trait C64xInstruction: AsAny {
     {
         Err(Error::new(ErrorKind::Unsupported, "Instruction not 32-bit"))
     }
-    fn new_compact(_opcode: u16) -> Result<Self>
+    fn new_compact(_opcode: u16, _fphead: &CompactInstructionHeader) -> Result<Self>
     where
         Self: Sized,
     {
@@ -59,7 +61,7 @@ pub trait C64xInstruction: AsAny {
     }
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Clone, Copy)]
 pub enum DataSize {
     Byte,
     ByteUnsigned,
@@ -182,7 +184,7 @@ impl ToString for ConditionalOperation {
         match self {
             ConditionalOperation::NonZero(register) => register.to_string(),
             ConditionalOperation::Zero(register) => format!("!{}", register.to_string()),
-            ConditionalOperation::ReservedLow | ConditionalOperation::ReservedHigh => String::new()
+            ConditionalOperation::ReservedLow | ConditionalOperation::ReservedHigh => String::new(),
         }
     }
 }
