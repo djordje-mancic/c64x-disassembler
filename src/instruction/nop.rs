@@ -12,7 +12,7 @@ pub struct NOPInstruction {
 }
 
 impl C64xInstruction for NOPInstruction {
-    fn new(opcode: u32, _fphead: Option<&super::fphead::CompactInstructionHeader>) -> Result<Self> {
+    fn new(input: &super::InstructionInput) -> Result<Self> {
         let format = [
             ParsingInstruction::Bit {
                 name: String::from("p"),
@@ -24,20 +24,20 @@ impl C64xInstruction for NOPInstruction {
             },
             ParsingInstruction::Match { size: 15, value: 0 },
         ];
-        let parsed_variables = parse(opcode, &format)
+        let parsed_variables = parse(input.opcode, &format)
             .map_err(|e| Error::new(ErrorKind::InvalidInput, format!("Not a NOP/IDLE: {e}")))?;
         let next_parallel = ParsedVariable::try_get(&parsed_variables, "p")?.get_bool()?;
         let parallel = false;
         let count = ParsedVariable::try_get(&parsed_variables, "src")?.get_u8()?;
         Ok(NOPInstruction {
-            opcode,
+            opcode: input.opcode,
             parallel,
             count,
             compact: false,
         })
     }
 
-    fn new_compact(opcode: u16, _fphead: &super::fphead::CompactInstructionHeader) -> Result<Self> {
+    fn new_compact(input: &super::InstructionInput) -> Result<Self> {
         let format = [
             ParsingInstruction::Match {
                 size: 13,
@@ -48,11 +48,11 @@ impl C64xInstruction for NOPInstruction {
                 name: String::from("N3"),
             },
         ];
-        let parsed_variables = parse(opcode as u32, &format)
+        let parsed_variables = parse(input.opcode, &format)
             .map_err(|e| Error::new(ErrorKind::InvalidInput, format!("Not a NOP/IDLE: {e}")))?;
         let count = ParsedVariable::try_get(&parsed_variables, "N3")?.get_u8()?;
         Ok(NOPInstruction {
-            opcode: opcode as u32,
+            opcode: input.opcode,
             parallel: false,
             count,
             compact: true,

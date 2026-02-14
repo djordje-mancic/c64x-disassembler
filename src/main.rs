@@ -11,7 +11,7 @@ use crate::{
     disasm::{
         COMPACT_INSTRUCTION_SIZE, INSTRUCTION_SIZE, PACKET_SIZE, read_instruction, read_packet,
     },
-    instruction::{C64xInstruction, ConditionalOperation},
+    instruction::{C64xInstruction, ConditionalOperation, InstructionInput},
 };
 
 mod disasm;
@@ -160,7 +160,7 @@ fn main() {
                 .expect("Buf error")
                 .clone();
             let opcode = u32::from_le_bytes(opcode_bytes);
-            if let Ok(instruction) = read_instruction(opcode, None) {
+            if let Ok(instruction) = read_instruction(InstructionInput::new(opcode)) {
                 print_instruction(instruction, &mut address, output);
             } else {
                 address += INSTRUCTION_SIZE as u32;

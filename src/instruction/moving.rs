@@ -16,10 +16,7 @@ pub struct MoveConstantInstruction {
 }
 
 impl C64xInstruction for MoveConstantInstruction {
-    fn new(
-        opcode: u32,
-        _fphead: Option<&super::fphead::CompactInstructionHeader>,
-    ) -> std::io::Result<Self> {
+    fn new(input: &super::InstructionInput) -> std::io::Result<Self> {
         let format_combinations = [
             (
                 Unit::S,
@@ -112,7 +109,7 @@ impl C64xInstruction for MoveConstantInstruction {
             ),
         ];
         for (unit, format) in format_combinations {
-            let Ok(parsed_variables) = parse(opcode, format.as_slice()) else {
+            let Ok(parsed_variables) = parse(input.opcode, format.as_slice()) else {
                 continue;
             };
             let next_parallel = ParsedVariable::try_get(&parsed_variables, "p")?.get_bool()?;
@@ -129,7 +126,7 @@ impl C64xInstruction for MoveConstantInstruction {
             let conditional_operation =
                 ParsedVariable::try_get(&parsed_variables, "cond")?.get_conditional_operation()?;
             return Ok(Self {
-                opcode,
+                opcode: input.opcode,
                 parallel,
                 high,
                 constant,
@@ -145,10 +142,7 @@ impl C64xInstruction for MoveConstantInstruction {
         ))
     }
 
-    fn new_compact(
-        opcode: u16,
-        _fphead: &super::fphead::CompactInstructionHeader,
-    ) -> std::io::Result<Self> {
+    fn new_compact(input: &super::InstructionInput) -> std::io::Result<Self> {
         let format_combinations = [
             (
                 Unit::S,
@@ -209,7 +203,7 @@ impl C64xInstruction for MoveConstantInstruction {
             ),
         ];
         for (unit, format) in format_combinations {
-            let Ok(parsed_variables) = parse(opcode as u32, format.as_slice()) else {
+            let Ok(parsed_variables) = parse(input.opcode, format.as_slice()) else {
                 continue;
             };
             let mut constant = ParsedVariable::try_get(&parsed_variables, "cst20")?.get_u8()?;
@@ -220,7 +214,7 @@ impl C64xInstruction for MoveConstantInstruction {
             }
             let destination = ParsedVariable::try_get(&parsed_variables, "dst")?.get_register()?;
             return Ok(Self {
-                opcode: opcode as u32,
+                opcode: input.opcode,
                 parallel: false,
                 high: false,
                 constant: constant as u32,
@@ -299,7 +293,7 @@ impl C64xInstruction for MoveConstantInstruction {
         ];
 
         for format in multiunit_formats {
-            let Ok(parsed_variables) = parse(opcode as u32, format.as_slice()) else {
+            let Ok(parsed_variables) = parse(input.opcode as u32, format.as_slice()) else {
                 continue;
             };
             let constant = ParsedVariable::try_get(&parsed_variables, "cst")?.get_u32()?;
@@ -319,7 +313,7 @@ impl C64xInstruction for MoveConstantInstruction {
                 }
             };
             return Ok(Self {
-                opcode: opcode as u32,
+                opcode: input.opcode,
                 parallel: false,
                 high: false,
                 constant,
@@ -764,13 +758,10 @@ impl MoveRegisterInstruction {
 }
 
 impl C64xInstruction for MoveRegisterInstruction {
-    fn new(
-        opcode: u32,
-        _fphead: Option<&super::fphead::CompactInstructionHeader>,
-    ) -> std::io::Result<Self> {
-        if let Ok(ret_val) = Self::new_mv(opcode) {
+    fn new(input: &super::InstructionInput) -> std::io::Result<Self> {
+        if let Ok(ret_val) = Self::new_mv(input.opcode) {
             return Ok(ret_val);
-        } else if let Ok(ret_val) = Self::new_mvc(opcode) {
+        } else if let Ok(ret_val) = Self::new_mvc(input.opcode) {
             return Ok(ret_val);
         }
 
@@ -780,10 +771,7 @@ impl C64xInstruction for MoveRegisterInstruction {
         ))
     }
 
-    fn new_compact(
-        opcode: u16,
-        _fphead: &super::fphead::CompactInstructionHeader,
-    ) -> std::io::Result<Self> {
+    fn new_compact(input: &super::InstructionInput) -> std::io::Result<Self> {
         let mv_format = [
             ParsingInstruction::Bit {
                 name: String::from("s"),
@@ -834,7 +822,7 @@ impl C64xInstruction for MoveRegisterInstruction {
             },
         ];
 
-        if let Ok(parsed_variables) = parse(opcode as u32, &mv_format) {
+        if let Ok(parsed_variables) = parse(input.opcode, &mv_format) {
             let parallel = false;
             let unit = ParsedVariable::try_get(&parsed_variables, "unit")?.get_unit()?;
             let side = ParsedVariable::try_get(&parsed_variables, "s")?.get_bool()?;
@@ -856,7 +844,7 @@ impl C64xInstruction for MoveRegisterInstruction {
             let source = RegisterFile::GeneralPurpose(source_register);
             let destination = RegisterFile::GeneralPurpose(destination_register);
             return Ok(Self {
-                opcode: opcode as u32,
+                opcode: input.opcode,
                 parallel,
                 source,
                 destination,
@@ -866,7 +854,7 @@ impl C64xInstruction for MoveRegisterInstruction {
                 unit,
                 conditional_operation: None,
             });
-        } else if let Ok(parsed_variables) = parse(opcode as u32, &mvc_format) {
+        } else if let Ok(parsed_variables) = parse(input.opcode, &mvc_format) {
             let parallel = false;
             let side = ParsedVariable::try_get(&parsed_variables, "s")?.get_bool()?;
             let source_register =
@@ -874,7 +862,7 @@ impl C64xInstruction for MoveRegisterInstruction {
             let source = RegisterFile::GeneralPurpose(source_register);
             let destination = RegisterFile::Control(ControlRegister::ILC);
             return Ok(Self {
-                opcode: opcode as u32,
+                opcode: input.opcode,
                 parallel,
                 source,
                 destination,

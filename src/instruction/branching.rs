@@ -5,7 +5,6 @@ use std::{
 
 use crate::instruction::{
     C64xInstruction, ConditionalOperation,
-    fphead::CompactInstructionHeader,
     parser::{ParsedVariable, ParsingInstruction, parse},
     register::{ControlRegister, Register},
 };
@@ -34,7 +33,7 @@ impl BranchInstruction {
 }
 
 impl C64xInstruction for BranchInstruction {
-    fn new(opcode: u32, fphead: Option<&CompactInstructionHeader>) -> std::io::Result<Self> {
+    fn new(input: &super::InstructionInput) -> std::io::Result<Self> {
         let formats = [
             vec![
                 ParsingInstruction::Bit {
@@ -150,7 +149,7 @@ impl C64xInstruction for BranchInstruction {
             ],
         ];
         for format in formats {
-            let Ok(parsed_variables) = parse(opcode, format.as_slice()) else {
+            let Ok(parsed_variables) = parse(input.opcode, format.as_slice()) else {
                 continue;
             };
             let side = ParsedVariable::try_get(&parsed_variables, "s")?.get_bool()?;
@@ -166,7 +165,13 @@ impl C64xInstruction for BranchInstruction {
             let branch_using = {
                 if let Ok(variable) = ParsedVariable::try_get(&parsed_variables, "cst") {
                     BranchUsing::Displacement(
-                        variable.get_i32()? << { if nop_count > 0 && fphead.is_some() { 1 } else { 2 } },
+                        variable.get_i32()? << {
+                            if nop_count > 0 && input.fphead.is_some() {
+                                1
+                            } else {
+                                2
+                            }
+                        },
                     )
                 } else if let Ok(variable) = ParsedVariable::try_get(&parsed_variables, "src") {
                     BranchUsing::Register(variable.get_register()?)
@@ -182,7 +187,7 @@ impl C64xInstruction for BranchInstruction {
                 }
             };
             return Ok(Self {
-                opcode,
+                opcode: input.opcode,
                 side,
                 parallel: false,
                 compact: false,
@@ -198,7 +203,10 @@ impl C64xInstruction for BranchInstruction {
         ))
     }
 
-    fn new_compact(opcode: u16, fphead: &CompactInstructionHeader) -> std::io::Result<Self> {
+    fn new_compact(input: &super::InstructionInput) -> std::io::Result<Self> {
+        let Some(fphead) = &input.fphead else {
+            return Err(Error::new(ErrorKind::InvalidInput, "No fphead"));
+        };
         if !fphead.decode_compact_branches {
             return Err(Error::new(
                 ErrorKind::InvalidInput,
@@ -335,7 +343,7 @@ impl C64xInstruction for BranchInstruction {
         ];
 
         for (name, format) in formats {
-            let Ok(parsed_variables) = parse(opcode as u32, format.as_slice()) else {
+            let Ok(parsed_variables) = parse(input.opcode, format.as_slice()) else {
                 continue;
             };
             let side = ParsedVariable::try_get(&parsed_variables, "s")?.get_bool()?;
@@ -378,7 +386,7 @@ impl C64xInstruction for BranchInstruction {
                 }
             };
             return Ok(Self {
-                opcode: opcode as u32,
+                opcode: input.opcode,
                 parallel: false,
                 compact: true,
                 conditional_operation,

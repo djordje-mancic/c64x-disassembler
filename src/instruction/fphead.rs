@@ -5,6 +5,7 @@ use crate::instruction::{
     parser::{ParsedVariable, ParsingInstruction, parse},
 };
 
+#[derive(Clone)]
 pub struct CompactInstructionHeader {
     opcode: u32,
     /// Layout field
@@ -35,7 +36,7 @@ pub struct CompactInstructionHeader {
 }
 
 impl C64xInstruction for CompactInstructionHeader {
-    fn new(opcode: u32, _fphead: Option<&Self>) -> Result<Self> {
+    fn new(input: &super::InstructionInput) -> Result<Self> {
         let format = [
             ParsingInstruction::BitArray {
                 size: 14,
@@ -69,7 +70,7 @@ impl C64xInstruction for CompactInstructionHeader {
                 value: 0b1110,
             },
         ];
-        let parsed_variables = parse(opcode, &format).map_err(|e| {
+        let parsed_variables = parse(input.opcode, &format).map_err(|e| {
             Error::new(
                 ErrorKind::InvalidInput,
                 format!("Not a compact instruction header: {e}"),
@@ -125,7 +126,7 @@ impl C64xInstruction for CompactInstructionHeader {
             ParsedVariable::try_get(&parsed_variables, "BR")?.get_bool()?;
         let saturate = ParsedVariable::try_get(&parsed_variables, "SAT")?.get_bool()?;
         Ok(Self {
-            opcode,
+            opcode: input.opcode,
             layout,
             parallel_instructions,
             loads_protected,

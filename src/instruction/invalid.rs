@@ -1,5 +1,3 @@
-use std::any::Any;
-
 use crate::instruction::C64xInstruction;
 
 pub struct InvalidInstruction {
@@ -8,22 +6,16 @@ pub struct InvalidInstruction {
 }
 
 impl C64xInstruction for InvalidInstruction {
-    fn new(
-        opcode: u32,
-        _fphead: Option<&super::fphead::CompactInstructionHeader>,
-    ) -> std::io::Result<Self> {
+    fn new(input: &super::InstructionInput) -> std::io::Result<Self> {
         Ok(InvalidInstruction {
-            opcode,
+            opcode: input.opcode,
             compact: false,
         })
     }
 
-    fn new_compact(
-        opcode: u16,
-        _fphead: &super::fphead::CompactInstructionHeader,
-    ) -> std::io::Result<Self> {
+    fn new_compact(input: &super::InstructionInput) -> std::io::Result<Self> {
         Ok(InvalidInstruction {
-            opcode: opcode as u32,
+            opcode: input.opcode,
             compact: true,
         })
     }

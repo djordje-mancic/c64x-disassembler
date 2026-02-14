@@ -27,13 +27,13 @@ impl<T: Any> AsAny for T {
 }
 
 pub trait C64xInstruction: AsAny {
-    fn new(_opcode: u32, _fphead: Option<&CompactInstructionHeader>) -> Result<Self>
+    fn new(_input: &InstructionInput) -> Result<Self>
     where
         Self: Sized,
     {
         Err(Error::new(ErrorKind::Unsupported, "Instruction not 32-bit"))
     }
-    fn new_compact(_opcode: u16, _fphead: &CompactInstructionHeader) -> Result<Self>
+    fn new_compact(_input: &InstructionInput) -> Result<Self>
     where
         Self: Sized,
     {
@@ -58,6 +58,20 @@ pub trait C64xInstruction: AsAny {
     }
     fn conditional_operation(&self) -> Option<ConditionalOperation> {
         None
+    }
+}
+
+pub struct InstructionInput {
+    pub opcode: u32,
+    pub fphead: Option<CompactInstructionHeader>,
+}
+
+impl InstructionInput {
+    pub fn new(opcode: u32) -> Self {
+        Self {
+            opcode,
+            fphead: None,
+        }
     }
 }
 
