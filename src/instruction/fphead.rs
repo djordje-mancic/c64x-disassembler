@@ -32,7 +32,7 @@ pub struct CompactInstructionHeader {
     /// instructions are decoded as ``SADD``, ``SUBS``, ``SSHL``, ``SMPY``, ``SMPYH``, ``SMPYLH`` and
     /// ``SMPYHL`` respectively.
     pub saturate: bool,
-    pub parallel_instructions: [bool; 14],
+    pub compact_p_bits: [bool; 14],
 }
 
 impl C64xInstruction for CompactInstructionHeader {
@@ -85,10 +85,10 @@ impl C64xInstruction for CompactInstructionHeader {
             };
             *layout_ref
         };
-        let parallel_instructions = {
+        let compact_p_bits = {
             let layout_vec = ParsedVariable::try_get(&parsed_variables, "p")?.get_bool_vec()?;
             let Some(layout_ref) = layout_vec.first_chunk::<14>() else {
-                return Err(Error::other("P-bits don't hhave 14 elements"));
+                return Err(Error::other("P-bits don't have 14 elements"));
             };
             *layout_ref
         };
@@ -131,7 +131,7 @@ impl C64xInstruction for CompactInstructionHeader {
                 ..Default::default()
             },
             layout,
-            parallel_instructions,
+            compact_p_bits,
             loads_protected,
             register_set,
             primary_data_size,

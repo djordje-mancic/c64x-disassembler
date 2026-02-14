@@ -24,13 +24,13 @@ impl C64xInstruction for NOPInstruction {
         ];
         let parsed_variables = parse(input.opcode, &format)
             .map_err(|e| Error::new(ErrorKind::InvalidInput, format!("Not a NOP/IDLE: {e}")))?;
-        let next_parallel = ParsedVariable::try_get(&parsed_variables, "p")?.get_bool()?;
-        let parallel = false;
+        let p_bit = ParsedVariable::try_get(&parsed_variables, "p")?.get_bool()?;
         let count = ParsedVariable::try_get(&parsed_variables, "src")?.get_u8()?;
         Ok(NOPInstruction {
             count,
             instruction_data: InstructionData {
                 opcode: input.opcode,
+                p_bit,
                 ..Default::default()
             },
         })

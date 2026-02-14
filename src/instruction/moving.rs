@@ -109,8 +109,7 @@ impl C64xInstruction for MoveConstantInstruction {
             let Ok(parsed_variables) = parse(input.opcode, format.as_slice()) else {
                 continue;
             };
-            let next_parallel = ParsedVariable::try_get(&parsed_variables, "p")?.get_bool()?;
-            let parallel = false;
+            let p_bit = ParsedVariable::try_get(&parsed_variables, "p")?.get_bool()?;
             let constant = ParsedVariable::try_get(&parsed_variables, "cst")?.get_u32()?;
             let destination = ParsedVariable::try_get(&parsed_variables, "dst")?.get_register()?;
             let high = {
@@ -130,6 +129,7 @@ impl C64xInstruction for MoveConstantInstruction {
                 instruction_data: InstructionData {
                     opcode: input.opcode,
                     conditional_operation,
+                    p_bit,
                     ..Default::default()
                 },
             });
@@ -556,9 +556,8 @@ impl MoveRegisterInstruction {
             let Ok(parsed_variables) = parse(opcode, format.as_slice()) else {
                 continue;
             };
-            let next_parallel = ParsedVariable::try_get(&parsed_variables, "p")?.get_bool()?;
+            let p_bit = ParsedVariable::try_get(&parsed_variables, "p")?.get_bool()?;
             let side = ParsedVariable::try_get(&parsed_variables, "s")?.get_bool()?;
-            let parallel = false;
             let source_register =
                 ParsedVariable::try_get(&parsed_variables, "src")?.get_register()?;
             let destination_register =
@@ -577,6 +576,7 @@ impl MoveRegisterInstruction {
                 instruction_data: InstructionData {
                     opcode,
                     conditional_operation,
+                    p_bit,
                     ..Default::default()
                 },
             });
@@ -709,8 +709,7 @@ impl MoveRegisterInstruction {
             let Ok(parsed_variables) = parse(opcode, format.as_slice()) else {
                 continue;
             };
-            let next_parallel = ParsedVariable::try_get(&parsed_variables, "p")?.get_bool()?;
-            let parallel = false;
+            let p_bit = ParsedVariable::try_get(&parsed_variables, "p")?.get_bool()?;
             let control_register =
                 ParsedVariable::try_get(&parsed_variables, "crlo")?.get_control_register()?;
             let (source, destination) = {
@@ -741,6 +740,7 @@ impl MoveRegisterInstruction {
                 instruction_data: InstructionData {
                     opcode,
                     conditional_operation,
+                    p_bit,
                     ..Default::default()
                 },
             });
@@ -815,7 +815,6 @@ impl C64xInstruction for MoveRegisterInstruction {
         ];
 
         if let Ok(parsed_variables) = parse(input.opcode, &mv_format) {
-            let parallel = false;
             let unit = ParsedVariable::try_get(&parsed_variables, "unit")?.get_unit()?;
             let side = ParsedVariable::try_get(&parsed_variables, "s")?.get_bool()?;
             let crosspath = ParsedVariable::try_get(&parsed_variables, "x")?.get_bool()?;
@@ -848,7 +847,6 @@ impl C64xInstruction for MoveRegisterInstruction {
                 },
             });
         } else if let Ok(parsed_variables) = parse(input.opcode, &mvc_format) {
-            let parallel = false;
             let side = ParsedVariable::try_get(&parsed_variables, "s")?.get_bool()?;
             let source_register =
                 ParsedVariable::try_get(&parsed_variables, "src")?.get_register()?;

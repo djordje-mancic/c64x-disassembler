@@ -149,6 +149,7 @@ impl C64xInstruction for BranchInstruction {
             let Ok(parsed_variables) = parse(input.opcode, format.as_slice()) else {
                 continue;
             };
+            let p_bit = ParsedVariable::try_get(&parsed_variables, "p")?.get_bool()?;
             let side = ParsedVariable::try_get(&parsed_variables, "s")?.get_bool()?;
             let conditional_operation =
                 ParsedVariable::try_get(&parsed_variables, "cond")?.get_conditional_operation()?;
@@ -192,6 +193,7 @@ impl C64xInstruction for BranchInstruction {
                     opcode: input.opcode,
                     compact: false,
                     conditional_operation,
+                    p_bit,
                     ..Default::default()
                 },
             });

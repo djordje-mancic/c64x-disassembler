@@ -60,6 +60,12 @@ pub trait C64xInstruction: AsAny {
     fn is_parallel(&self) -> bool {
         self.instruction_data().parallel
     }
+    fn get_p_bit(&self) -> bool {
+        self.instruction_data().p_bit
+    }
+    fn set_parallel(&mut self, parallel: bool) {
+        self.instruction_data_mut().parallel = parallel;
+    }
     fn conditional_operation(&self) -> Option<ConditionalOperation> {
         self.instruction_data().conditional_operation
     }
@@ -84,6 +90,8 @@ pub struct InstructionData {
     pub opcode: u32,
     pub compact: bool,
     pub parallel: bool,
+    /// Determines if the next instruction will be executed in parallel
+    pub p_bit: bool,
     pub conditional_operation: Option<ConditionalOperation>,
 }
 
@@ -93,6 +101,7 @@ impl Default for InstructionData {
             opcode: 0,
             compact: false,
             parallel: false,
+            p_bit: false,
             conditional_operation: None,
         }
     }

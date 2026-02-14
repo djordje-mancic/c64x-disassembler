@@ -76,17 +76,21 @@ pub fn read_packet(
         .downcast_ref::<CompactInstructionHeader>();
 
     let mut index = 0;
+    let mut previous_p_bit = false;
     while index < 7 * 4 {
         let instruction = {
             if let Some(fphead) = fphead_option
                 && fphead.layout[index / 4]
             {
-                read_compact_instruction(InstructionInput {
+                let mut compact_instruction = read_compact_instruction(InstructionInput {
                     opcode: u16::from_le_bytes([packet[index], packet[index + 1]]) as u32,
                     fphead: fphead_option.cloned(),
-                })?
+                })?;
+                compact_instruction.set_parallel(previous_p_bit);
+                previous_p_bit = fphead.compact_p_bits[index / 2];
+                compact_instruction
             } else {
-                read_instruction(InstructionInput {
+                let mut instruction = read_instruction(InstructionInput {
                     opcode: u32::from_le_bytes([
                         packet[index],
                         packet[index + 1],
@@ -94,7 +98,10 @@ pub fn read_packet(
                         packet[index + 3],
                     ]),
                     fphead: fphead_option.cloned(),
-                })?
+                })?;
+                instruction.set_parallel(previous_p_bit);
+                previous_p_bit = instruction.get_p_bit();
+                instruction
             }
         };
 
