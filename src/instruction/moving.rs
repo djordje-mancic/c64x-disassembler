@@ -1,18 +1,15 @@
 use crate::instruction::{
-    C64xInstruction, ConditionalOperation, Unit,
+    C64xInstruction, ConditionalOperation, InstructionData, Unit,
     parser::{ParsedVariable, ParsingInstruction, parse},
     register::{ControlRegister, Register, RegisterFile},
 };
 
 pub struct MoveConstantInstruction {
-    opcode: u32,
-    pub parallel: bool,
     pub high: bool,
     pub constant: u32,
     pub destination: Register,
-    compact: bool,
     pub unit: Unit,
-    conditional_operation: Option<ConditionalOperation>,
+    instruction_data: InstructionData,
 }
 
 impl C64xInstruction for MoveConstantInstruction {
@@ -126,14 +123,15 @@ impl C64xInstruction for MoveConstantInstruction {
             let conditional_operation =
                 ParsedVariable::try_get(&parsed_variables, "cond")?.get_conditional_operation()?;
             return Ok(Self {
-                opcode: input.opcode,
-                parallel,
                 high,
                 constant,
                 destination,
-                compact: false,
                 unit,
-                conditional_operation,
+                instruction_data: InstructionData {
+                    opcode: input.opcode,
+                    conditional_operation,
+                    ..Default::default()
+                },
             });
         }
         Err(std::io::Error::new(
@@ -214,14 +212,15 @@ impl C64xInstruction for MoveConstantInstruction {
             }
             let destination = ParsedVariable::try_get(&parsed_variables, "dst")?.get_register()?;
             return Ok(Self {
-                opcode: input.opcode,
-                parallel: false,
                 high: false,
                 constant: constant as u32,
                 destination,
-                compact: true,
                 unit,
-                conditional_operation: None,
+                instruction_data: InstructionData {
+                    opcode: input.opcode,
+                    compact: true,
+                    ..Default::default()
+                },
             });
         }
 
@@ -313,14 +312,16 @@ impl C64xInstruction for MoveConstantInstruction {
                 }
             };
             return Ok(Self {
-                opcode: input.opcode,
-                parallel: false,
                 high: false,
                 constant,
                 destination,
-                compact: true,
                 unit,
-                conditional_operation,
+                instruction_data: InstructionData {
+                    opcode: input.opcode,
+                    conditional_operation,
+                    compact: true,
+                    ..Default::default()
+                },
             });
         }
 
@@ -346,37 +347,26 @@ impl C64xInstruction for MoveConstantInstruction {
         value
     }
 
-    fn opcode(&self) -> u32 {
-        self.opcode
-    }
-
     fn operands(&self) -> String {
         format!("0x{:04X}, {}", self.constant, self.destination.to_string())
     }
 
-    fn is_compact(&self) -> bool {
-        self.compact
+    fn instruction_data(&self) -> &InstructionData {
+        &self.instruction_data
     }
 
-    fn is_parallel(&self) -> bool {
-        self.parallel
-    }
-
-    fn conditional_operation(&self) -> Option<ConditionalOperation> {
-        self.conditional_operation
+    fn instruction_data_mut(&mut self) -> &mut InstructionData {
+        &mut self.instruction_data
     }
 }
 
 pub struct MoveRegisterInstruction {
-    opcode: u32,
-    pub parallel: bool,
     pub source: RegisterFile,
     pub destination: RegisterFile,
-    compact: bool,
     side: bool,
     pub delayed: bool,
     pub unit: Unit,
-    conditional_operation: Option<ConditionalOperation>,
+    instruction_data: InstructionData,
 }
 
 impl MoveRegisterInstruction {
@@ -579,15 +569,16 @@ impl MoveRegisterInstruction {
                 ParsedVariable::try_get(&parsed_variables, "cond")?.get_conditional_operation()?;
             let delayed = if unit == Unit::M { true } else { false };
             return Ok(Self {
-                opcode,
-                compact: false,
-                parallel,
                 source,
                 destination,
-                conditional_operation,
                 unit,
                 side,
                 delayed,
+                instruction_data: InstructionData {
+                    opcode,
+                    conditional_operation,
+                    ..Default::default()
+                },
             });
         }
         Err(std::io::Error::other("Not MV/MVD"))
@@ -742,15 +733,16 @@ impl MoveRegisterInstruction {
             let conditional_operation =
                 ParsedVariable::try_get(&parsed_variables, "cond")?.get_conditional_operation()?;
             return Ok(Self {
-                opcode,
-                compact: false,
-                parallel,
                 source,
                 destination,
-                conditional_operation,
                 unit: Unit::S,
                 side: true,
                 delayed: false,
+                instruction_data: InstructionData {
+                    opcode,
+                    conditional_operation,
+                    ..Default::default()
+                },
             });
         }
         Err(std::io::Error::other("Not MVC"))
@@ -844,15 +836,16 @@ impl C64xInstruction for MoveRegisterInstruction {
             let source = RegisterFile::GeneralPurpose(source_register);
             let destination = RegisterFile::GeneralPurpose(destination_register);
             return Ok(Self {
-                opcode: input.opcode,
-                parallel,
                 source,
                 destination,
-                compact: true,
                 side,
                 delayed: false,
                 unit,
-                conditional_operation: None,
+                instruction_data: InstructionData {
+                    opcode: input.opcode,
+                    compact: true,
+                    ..Default::default()
+                },
             });
         } else if let Ok(parsed_variables) = parse(input.opcode, &mvc_format) {
             let parallel = false;
@@ -862,15 +855,16 @@ impl C64xInstruction for MoveRegisterInstruction {
             let source = RegisterFile::GeneralPurpose(source_register);
             let destination = RegisterFile::Control(ControlRegister::ILC);
             return Ok(Self {
-                opcode: input.opcode,
-                parallel,
                 source,
                 destination,
-                compact: true,
                 side,
                 delayed: false,
                 unit: Unit::S,
-                conditional_operation: None,
+                instruction_data: InstructionData {
+                    opcode: input.opcode,
+                    compact: true,
+                    ..Default::default()
+                },
             });
         }
 
@@ -911,19 +905,11 @@ impl C64xInstruction for MoveRegisterInstruction {
         )
     }
 
-    fn opcode(&self) -> u32 {
-        self.opcode
+    fn instruction_data(&self) -> &InstructionData {
+        &self.instruction_data
     }
 
-    fn is_compact(&self) -> bool {
-        self.compact
-    }
-
-    fn is_parallel(&self) -> bool {
-        self.parallel
-    }
-
-    fn conditional_operation(&self) -> Option<ConditionalOperation> {
-        self.conditional_operation
+    fn instruction_data_mut(&mut self) -> &mut InstructionData {
+        &mut self.instruction_data
     }
 }

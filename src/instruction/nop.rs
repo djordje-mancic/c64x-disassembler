@@ -1,14 +1,12 @@
 use crate::instruction::{
-    C64xInstruction,
+    C64xInstruction, InstructionData,
     parser::{ParsedVariable, ParsingInstruction, parse},
 };
 use std::io::{Error, ErrorKind, Result};
 
 pub struct NOPInstruction {
-    pub opcode: u32,
-    pub parallel: bool,
     pub count: u8,
-    compact: bool,
+    instruction_data: InstructionData,
 }
 
 impl C64xInstruction for NOPInstruction {
@@ -30,10 +28,11 @@ impl C64xInstruction for NOPInstruction {
         let parallel = false;
         let count = ParsedVariable::try_get(&parsed_variables, "src")?.get_u8()?;
         Ok(NOPInstruction {
-            opcode: input.opcode,
-            parallel,
             count,
-            compact: false,
+            instruction_data: InstructionData {
+                opcode: input.opcode,
+                ..Default::default()
+            },
         })
     }
 
@@ -52,10 +51,12 @@ impl C64xInstruction for NOPInstruction {
             .map_err(|e| Error::new(ErrorKind::InvalidInput, format!("Not a NOP/IDLE: {e}")))?;
         let count = ParsedVariable::try_get(&parsed_variables, "N3")?.get_u8()?;
         Ok(NOPInstruction {
-            opcode: input.opcode,
-            parallel: false,
             count,
-            compact: true,
+            instruction_data: InstructionData {
+                opcode: input.opcode,
+                compact: true,
+                ..Default::default()
+            },
         })
     }
 
@@ -67,10 +68,6 @@ impl C64xInstruction for NOPInstruction {
         }
     }
 
-    fn opcode(&self) -> u32 {
-        self.opcode
-    }
-
     fn operands(&self) -> String {
         if self.count > 0 && self.count != 0b1111 {
             format!("{}", self.count + 1)
@@ -79,11 +76,11 @@ impl C64xInstruction for NOPInstruction {
         }
     }
 
-    fn is_compact(&self) -> bool {
-        self.compact
+    fn instruction_data(&self) -> &InstructionData {
+        &self.instruction_data
     }
 
-    fn is_parallel(&self) -> bool {
-        self.parallel
+    fn instruction_data_mut(&mut self) -> &mut InstructionData {
+        &mut self.instruction_data
     }
 }

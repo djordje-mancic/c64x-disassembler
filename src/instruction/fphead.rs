@@ -1,13 +1,13 @@
 use std::io::{Error, ErrorKind, Result};
 
 use crate::instruction::{
-    C64xInstruction, DataSize,
+    C64xInstruction, DataSize, InstructionData,
     parser::{ParsedVariable, ParsingInstruction, parse},
 };
 
 #[derive(Clone)]
 pub struct CompactInstructionHeader {
-    opcode: u32,
+    instruction_data: InstructionData,
     /// Layout field
     /// Determines if the i-th word holds two compact (16-bit) instructions (true)
     /// or a regular, 32-bit instruction (false).
@@ -126,7 +126,10 @@ impl C64xInstruction for CompactInstructionHeader {
             ParsedVariable::try_get(&parsed_variables, "BR")?.get_bool()?;
         let saturate = ParsedVariable::try_get(&parsed_variables, "SAT")?.get_bool()?;
         Ok(Self {
-            opcode: input.opcode,
+            instruction_data: InstructionData {
+                opcode: input.opcode,
+                ..Default::default()
+            },
             layout,
             parallel_instructions,
             loads_protected,
@@ -178,7 +181,10 @@ impl C64xInstruction for CompactInstructionHeader {
         }
         return_str
     }
-    fn opcode(&self) -> u32 {
-        self.opcode
+    fn instruction_data(&self) -> &InstructionData {
+        &self.instruction_data
+    }
+    fn instruction_data_mut(&mut self) -> &mut InstructionData {
+        &mut self.instruction_data
     }
 }

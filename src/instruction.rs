@@ -49,15 +49,19 @@ pub trait C64xInstruction: AsAny {
     fn operands(&self) -> String {
         String::from("")
     }
-    fn opcode(&self) -> u32;
+    fn instruction_data(&self) -> &InstructionData;
+    fn instruction_data_mut(&mut self) -> &mut InstructionData;
+    fn opcode(&self) -> u32 {
+        self.instruction_data().opcode
+    }
     fn is_compact(&self) -> bool {
-        false
+        self.instruction_data().compact
     }
     fn is_parallel(&self) -> bool {
-        false
+        self.instruction_data().parallel
     }
     fn conditional_operation(&self) -> Option<ConditionalOperation> {
-        None
+        self.instruction_data().conditional_operation
     }
 }
 
@@ -71,6 +75,25 @@ impl InstructionInput {
         Self {
             opcode,
             fphead: None,
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct InstructionData {
+    pub opcode: u32,
+    pub compact: bool,
+    pub parallel: bool,
+    pub conditional_operation: Option<ConditionalOperation>,
+}
+
+impl Default for InstructionData {
+    fn default() -> Self {
+        Self {
+            opcode: 0,
+            compact: false,
+            parallel: false,
+            conditional_operation: None,
         }
     }
 }

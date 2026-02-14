@@ -1,36 +1,42 @@
-use crate::instruction::C64xInstruction;
+use crate::instruction::{C64xInstruction, InstructionData};
 
 pub struct InvalidInstruction {
-    opcode: u32,
-    compact: bool,
+    instruction_data: InstructionData,
 }
 
 impl C64xInstruction for InvalidInstruction {
     fn new(input: &super::InstructionInput) -> std::io::Result<Self> {
         Ok(InvalidInstruction {
-            opcode: input.opcode,
-            compact: false,
+            instruction_data: InstructionData {
+                opcode: input.opcode,
+                ..Default::default()
+            },
         })
     }
 
     fn new_compact(input: &super::InstructionInput) -> std::io::Result<Self> {
         Ok(InvalidInstruction {
-            opcode: input.opcode,
-            compact: true,
+            instruction_data: InstructionData {
+                opcode: input.opcode,
+                compact: true,
+                ..Default::default()
+            },
         })
     }
 
     fn instruction(&self) -> String {
-        if self.compact {
+        if self.is_compact() {
             String::from("INVALID COMPACT INSTRUCTION")
         } else {
             String::from("INVALID INSTRUCTION")
         }
     }
-    fn opcode(&self) -> u32 {
-        self.opcode
+
+    fn instruction_data(&self) -> &InstructionData {
+        &self.instruction_data
     }
-    fn is_compact(&self) -> bool {
-        self.compact
+
+    fn instruction_data_mut(&mut self) -> &mut InstructionData {
+        &mut self.instruction_data
     }
 }

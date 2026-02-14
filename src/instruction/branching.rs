@@ -4,7 +4,7 @@ use std::{
 };
 
 use crate::instruction::{
-    C64xInstruction, ConditionalOperation,
+    C64xInstruction, ConditionalOperation, InstructionData,
     parser::{ParsedVariable, ParsingInstruction, parse},
     register::{ControlRegister, Register},
 };
@@ -16,10 +16,7 @@ pub enum BranchUsing {
 }
 
 pub struct BranchInstruction {
-    opcode: u32,
-    pub parallel: bool,
-    compact: bool,
-    conditional_operation: Option<ConditionalOperation>,
+    instruction_data: InstructionData,
     pub branch_using: BranchUsing,
     pub side: bool,
     pce1_address: Option<u32>,
@@ -187,14 +184,16 @@ impl C64xInstruction for BranchInstruction {
                 }
             };
             return Ok(Self {
-                opcode: input.opcode,
                 side,
-                parallel: false,
-                compact: false,
-                conditional_operation,
                 branch_using,
                 pce1_address: None,
                 nop_count,
+                instruction_data: InstructionData {
+                    opcode: input.opcode,
+                    compact: false,
+                    conditional_operation,
+                    ..Default::default()
+                },
             });
         }
         Err(Error::new(
@@ -386,10 +385,12 @@ impl C64xInstruction for BranchInstruction {
                 }
             };
             return Ok(Self {
-                opcode: input.opcode,
-                parallel: false,
-                compact: true,
-                conditional_operation,
+                instruction_data: InstructionData {
+                    opcode: input.opcode,
+                    compact: true,
+                    conditional_operation,
+                    ..Default::default()
+                },
                 branch_using,
                 side,
                 pce1_address: None,
@@ -404,7 +405,7 @@ impl C64xInstruction for BranchInstruction {
     }
 
     fn instruction_clean(&self) -> String {
-        if let Some(co) = self.conditional_operation
+        if let Some(co) = self.conditional_operation()
             && co == ConditionalOperation::ReservedLow
         {
             String::from("CALLP")
@@ -452,7 +453,7 @@ impl C64xInstruction for BranchInstruction {
             BranchUsing::Pointer(register) => register.to_string(),
         };
 
-        if let Some(co) = self.conditional_operation
+        if let Some(co) = self.conditional_operation()
             && co == ConditionalOperation::ReservedLow
         {
             format!("{operands}, {}", Register::from(3, self.side).to_string())
@@ -463,19 +464,11 @@ impl C64xInstruction for BranchInstruction {
         }
     }
 
-    fn opcode(&self) -> u32 {
-        self.opcode
+    fn instruction_data(&self) -> &InstructionData {
+        &self.instruction_data
     }
 
-    fn is_compact(&self) -> bool {
-        self.compact
-    }
-
-    fn conditional_operation(&self) -> Option<ConditionalOperation> {
-        self.conditional_operation
-    }
-
-    fn is_parallel(&self) -> bool {
-        self.parallel
+    fn instruction_data_mut(&mut self) -> &mut InstructionData {
+        &mut self.instruction_data
     }
 }
