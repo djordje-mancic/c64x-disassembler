@@ -9,6 +9,10 @@ use crate::instruction::{
     nop::NOPInstruction,
 };
 
+pub mod instruction;
+
+/// Reads a compact 16-bit instruction and returns a result containing a
+/// struct with the [C64xInstruction] trait.
 pub fn read_compact_instruction(input: InstructionInput) -> Result<Box<dyn C64xInstruction>> {
     if let Ok(instruction) = MoveConstantInstruction::new_compact(&input) {
         return Ok(Box::new(instruction));
@@ -29,6 +33,8 @@ pub fn read_compact_instruction(input: InstructionInput) -> Result<Box<dyn C64xI
     Ok(Box::new(InvalidInstruction::new_compact(&input)?))
 }
 
+/// Reads a 32-bit instruction and returns a result containing a
+/// struct with the [C64xInstruction] trait.
 pub fn read_instruction(input: InstructionInput) -> Result<Box<dyn C64xInstruction>> {
     if let Ok(instruction) = MoveConstantInstruction::new(&input) {
         return Ok(Box::new(instruction));

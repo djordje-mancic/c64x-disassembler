@@ -1,6 +1,9 @@
 [package]
 name = "c64x-disassembler"
 description = "Disassembler for TMS320C64x/C64x+ Digital Signal Processors"
+repository = "https://github.com/djordje-mancic/c64x-disassembler"
+license = "MIT"
+readme = "README.md"
 version = "0.1.0"
 edition = "2024"
 

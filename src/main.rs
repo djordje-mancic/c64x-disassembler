@@ -7,15 +7,11 @@ use std::{
 
 use clap::Parser;
 
-use crate::{
-    disasm::{
-        COMPACT_INSTRUCTION_SIZE, INSTRUCTION_SIZE, PACKET_SIZE, read_instruction, read_packet,
-    },
+use c64x_disassembler::{
+    COMPACT_INSTRUCTION_SIZE, INSTRUCTION_SIZE, PACKET_SIZE,
     instruction::{C64xInstruction, ConditionalOperation, InstructionInput},
+    read_instruction, read_packet,
 };
-
-mod disasm;
-mod instruction;
 
 #[derive(Parser)]
 #[command(version, about)]
