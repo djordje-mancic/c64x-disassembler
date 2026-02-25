@@ -1,4 +1,7 @@
-use std::{fmt::Display, ops::{AddAssign, Not}};
+use std::{
+    fmt::Display,
+    ops::{AddAssign, Not},
+};
 
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub enum Register {
