@@ -606,7 +606,7 @@ impl MoveRegisterInstruction {
                     size: 5,
                     name: String::from("crlo"),
                 },
-                ParsingInstruction::Register {
+                ParsingInstruction::RegisterCrosspath {
                     size: 5,
                     name: String::from("dst"),
                 },
@@ -630,7 +630,7 @@ impl MoveRegisterInstruction {
                     name: String::from("x"),
                 },
                 ParsingInstruction::Match { size: 5, value: 0 },
-                ParsingInstruction::Register {
+                ParsingInstruction::RegisterCrosspath {
                     size: 5,
                     name: String::from("src"),
                 },
@@ -665,7 +665,7 @@ impl MoveRegisterInstruction {
                     size: 5,
                     name: String::from("crlo"),
                 },
-                ParsingInstruction::Register {
+                ParsingInstruction::RegisterCrosspath {
                     size: 5,
                     name: String::from("dst"),
                 },
@@ -692,7 +692,7 @@ impl MoveRegisterInstruction {
                     size: 5,
                     name: String::from("crhi"),
                 },
-                ParsingInstruction::Register {
+                ParsingInstruction::RegisterCrosspath {
                     size: 5,
                     name: String::from("src"),
                 },
