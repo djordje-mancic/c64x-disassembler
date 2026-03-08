@@ -228,12 +228,6 @@ impl C6000Instruction for BranchInstruction {
         let Some(fphead) = &input.fphead else {
             return Err(Error::new(ErrorKind::InvalidInput, "No fphead"));
         };
-        if !fphead.decode_compact_branches {
-            return Err(Error::new(
-                ErrorKind::InvalidInput,
-                "Decoding compact branch instructions set to false (BR = 0)",
-            ));
-        }
 
         let formats = [
             (
