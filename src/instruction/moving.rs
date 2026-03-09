@@ -335,7 +335,11 @@ impl C6000Instruction for MoveConstantInstruction {
         if self.high {
             String::from("MVKH")
         } else {
-            String::from("MVK")
+            if self.constant == 0 {
+                String::from("ZERO")
+            } else {
+                String::from("MVK")
+            }
         }
     }
 
@@ -348,7 +352,11 @@ impl C6000Instruction for MoveConstantInstruction {
     }
 
     fn operands(&self) -> String {
-        format!("0x{:04X}, {}", self.constant, self.destination.to_string())
+        if !self.high && self.constant == 0 {
+            self.destination.to_string()
+        } else {
+            format!("0x{:04X}, {}", self.constant, self.destination.to_string())
+        }
     }
 
     fn instruction_data(&self) -> &InstructionData {
